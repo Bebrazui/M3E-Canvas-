@@ -33,7 +33,27 @@ export const SEED_TEXT: Record<Lang, { favorite: string; share: string; inbox: s
 export function translateDefaultText(value: string, kind: string, field: "label" | "supporting" | "tab", lang: Lang): string {
   for (const { key: from } of LANGS) {
     if (field === "tab") {
-      const labels = (l: Lang) => kind === "tabs" ? TAB_LABELS[l] : kind === "select" ? SELECT_OPTIONS[l] : (kind === "fabMenu" ? FAB_MENU_TABS[l] : kind === "splitButton" ? SPLIT_MENU_TABS[l] : NAV_TABS[l]).map((tab) => tab.label);
+      const labels = (l: Lang) =>
+        kind === "tabs"
+          ? TAB_LABELS[l]
+          : kind === "select"
+            ? SELECT_OPTIONS[l]
+            : (kind === "fabMenu"
+                ? FAB_MENU_TABS[l]
+                : kind === "splitButton"
+                  ? SPLIT_MENU_TABS[l]
+                  : kind === "segmentedButton"
+                    ? SEGMENTED_TABS[l]
+                    : kind === "breadcrumb"
+                      ? BREADCRUMB_TABS[l]
+                      : kind === "bottomSheet"
+                        ? BOTTOM_SHEET_TABS[l]
+                        : kind === "sideSheet"
+                          ? SIDE_SHEET_TABS[l]
+                          : kind === "banner"
+                            ? BANNER_TABS[l]
+                            : NAV_TABS[l]
+              ).map((tab) => tab.label);
       const index = labels(from).indexOf(value);
       if (index >= 0) return labels(lang)[index] ?? value;
     } else {
@@ -90,6 +110,12 @@ export const UI = {
   zoomIn: { ja: "拡大", en: "Zoom in", zh: "放大" },
   zoomOut: { ja: "縮小", en: "Zoom out", zh: "缩小" },
   fit: { ja: "全体を表示", en: "Fit", zh: "适应窗口" },
+  grid: { ja: "グリッド", en: "Grid", zh: "网格" },
+  gridOff: { ja: "グリッド: オフ", en: "Grid: Off", zh: "网格: 关闭" },
+  grid8dp: { ja: "グリッド: 8dp (ライン)", en: "Grid: 8dp (Lines)", zh: "网格: 8dp (线框)" },
+  grid4dp: { ja: "グリッド: 4dp (ライン)", en: "Grid: 4dp (Lines)", zh: "网格: 4dp (线框)" },
+  gridColumns: { ja: "グリッド: 4カラム (M3)", en: "Grid: 4 Columns (M3)", zh: "网格: 4列布局 (M3)" },
+  gridDots: { ja: "グリッド: 8dp (ドット)", en: "Grid: 8dp (Dots)", zh: "网格: 8dp (点状)" },
   undo: { ja: "元に戻す", en: "Undo", zh: "撤销" },
   redo: { ja: "やり直す", en: "Redo", zh: "重做" },
   clearAll: { ja: "すべて消す", en: "Clear canvas", zh: "全部清除" },
@@ -99,6 +125,8 @@ export const UI = {
     en: "Every screen and part will be removed. Undo (Ctrl+Z) can bring them back.",
     zh: "将删除所有屏幕和组件。可以用撤销 (Ctrl+Z) 恢复。",
   },
+  dismiss: { ja: "閉じる", en: "Dismiss", zh: "关闭" },
+  retry: { ja: "再試行", en: "Retry", zh: "重试" },
   // inspector
   screen: { ja: "画面", en: "Screen", zh: "屏幕" },
   screenName: { ja: "画面の名前", en: "Screen name", zh: "屏幕名称" },
@@ -199,6 +227,16 @@ export const UI = {
   icon: { ja: "アイコン", en: "Icon", zh: "图标" },
   noIcon: { ja: "アイコンなし", en: "No icon", zh: "无图标" },
   searchIcons: { ja: "アイコンを検索", en: "Search icons", zh: "搜索图标" },
+  standardShape: { ja: "角丸四角（標準）", en: "Rectangle (standard)", zh: "标准矩形" },
+  shapeAll: { ja: "すべて", en: "All", zh: "全部" },
+  shapeBasic: { ja: "基本", en: "Basic", zh: "基础" },
+  shapeExpressive: { ja: "エクスプレッシブ", en: "Expressive", zh: "表现力" },
+  shapeGeometric: { ja: "ジオメトリック", en: "Geometric", zh: "几何" },
+  border: { ja: "枠線", en: "Border", zh: "边框" },
+  borderWidth: { ja: "太さ", en: "Border width", zh: "边框粗细" },
+  borderColor: { ja: "枠線の色", en: "Border color", zh: "边框颜色" },
+  borderOffset: { ja: "余白", en: "Border offset", zh: "边框内边距" },
+  fillColor: { ja: "背景色", en: "Fill color", zh: "填充颜色" },
   style: { ja: "スタイル", en: "Style", zh: "样式" },
   filled: { ja: "塗りつぶし", en: "Filled", zh: "填充" },
   tonal: { ja: "トーナル", en: "Tonal", zh: "色调" },
@@ -496,8 +534,9 @@ export const KO: Record<UIKey, string> = {
   parts: "부품", layers: "레이어", edit: "편집", prompt: "프롬프트", closePanel: "패널 닫기",
   search: "검색", favorites: "즐겨찾기", addFavorite: "즐겨찾기에 추가", removeFavorite: "즐겨찾기에서 제거", clear: "지우기", language: "언어",
   select: "선택", hand: "손 도구", blank: "빈 캔버스", phone: "휴대전화 화면", addFrame: "화면 추가", preview: "미리보기",
-  zoomIn: "확대", zoomOut: "축소", fit: "전체 맞춤", undo: "실행 취소", redo: "다시 실행",
+  zoomIn: "확대", zoomOut: "축소", fit: "전체 맞춤", grid: "그리드", gridOff: "그리드: 끔", grid8dp: "그리드: 8dp (선)", grid4dp: "그리드: 4dp (선)", gridColumns: "그리드: 4열 (M3)", gridDots: "그리드: 8dp (점)", undo: "실행 취소", redo: "다시 실행",
   clearAll: "모두 지우기", clearAllTitle: "캔버스를 비울까요?", clearAllBody: "모든 화면과 부품을 삭제합니다. 실행 취소(Ctrl+Z)로 복원할 수 있습니다.",
+  dismiss: "닫기", retry: "다시 시도",
   screen: "화면", screenName: "화면 이름", name: "이름", background: "배경", export: "내보내기", project: "프로젝트",
   saveProject: "프로젝트 저장", openProject: "프로젝트 열기", replaceProjectTitle: "이 프로젝트를 열까요?",
   replaceProject: "현재 캔버스가 교체됩니다. 실행 취소(Ctrl+Z)로 되돌릴 수 있습니다.",
@@ -518,6 +557,7 @@ export const KO: Record<UIKey, string> = {
   duplicate: "복제", more: "더보기", delete: "삭제", deleteSelection: "선택 항목 삭제",
   text: "텍스트", label: "레이블", bold: "굵게", action: "동작", supporting: "보조 텍스트", tabs: "항목", changeIcon: "아이콘 변경",
   options: "옵션", addOption: "옵션 추가", removeOption: "이 옵션 삭제", addTab: "탭 추가", selectedOption: "초깃값", image: "이미지", pickImage: "이미지 선택", removeImage: "이미지 제거", imageUrl: "이미지 URL", imageFailed: "이 이미지를 읽을 수 없습니다", imageTop: "위쪽", imageBottom: "아래쪽", imageLeading: "앞쪽", imageTrailing: "뒤쪽", imageBehind: "배경", cardLayout: "레이아웃", noImageLayout: "이미지 없음", textPosition: "텍스트 위치", textTop: "위", textMiddle: "가운데", textBottom: "아래", textStart: "왼쪽", textCenter: "가운데", textEnd: "오른쪽", imageSize: "이미지 크기", textColor: "텍스트 색상", autoWidth: "자동", icon: "아이콘", noIcon: "아이콘 없음", searchIcons: "아이콘 검색",
+  standardShape: "표준 직사각형", shapeAll: "전체", shapeBasic: "기본", shapeExpressive: "익스프레시브", shapeGeometric: "기하학", border: "테두리", borderWidth: "테두리 두께", borderColor: "테두리 색상", borderOffset: "테두리 간격", fillColor: "채우기 색상",
   style: "스타일", state: "상태", selected: "선택됨", handle: "핸들", switchOff: "스위치(꺼짐)", switchOn: "스위치(켜짐)", on: "켜짐", container: "컨테이너", wavy: "물결 모양", determinate: "확정형",
   railState: "레일 표시", railCollapsed: "접힘", railExpanded: "펼침",
  
@@ -616,6 +656,14 @@ export const KIND_TEXT: Record<
     carousel: { noun: "カルーセル" },
     datePicker: { noun: "日付ピッカー", label: "3月17日（月）" },
     timePicker: { noun: "時刻ピッカー" },
+    segmentedButton: { noun: "セグメントボタン" },
+    avatar: { noun: "アバター", label: "A" },
+    badge: { noun: "バッジ", label: "3" },
+    breadcrumb: { noun: "ブレッドクラム" },
+    skeleton: { noun: "スケルトン" },
+    bottomSheet: { noun: "ボトムシート", label: "ボトムシート", supporting: "シートの詳細やアクション" },
+    sideSheet: { noun: "サイドシート", label: "ユーザー名", supporting: "user@example.com" },
+    banner: { noun: "バナー", label: "オフライン", supporting: "接続を確認して再試行してください。" },
   },
   en: {
     box: { noun: "box" },
@@ -653,6 +701,14 @@ export const KIND_TEXT: Record<
     carousel: { noun: "carousel" },
     datePicker: { noun: "date picker", label: "Mon, Mar 17" },
     timePicker: { noun: "time picker" },
+    segmentedButton: { noun: "segmented button" },
+    avatar: { noun: "avatar", label: "A" },
+    badge: { noun: "badge", label: "3" },
+    breadcrumb: { noun: "breadcrumb" },
+    skeleton: { noun: "skeleton" },
+    bottomSheet: { noun: "bottom sheet", label: "Bottom Sheet", supporting: "Sheet details and actions" },
+    sideSheet: { noun: "side sheet", label: "User Name", supporting: "user@example.com" },
+    banner: { noun: "banner", label: "You are offline", supporting: "Check your connection and try again." },
   },
   zh: {
     box: { noun: "容器框" },
@@ -690,6 +746,14 @@ export const KIND_TEXT: Record<
     carousel: { noun: "轮播" },
     datePicker: { noun: "日期选择器", label: "3月17日 周一" },
     timePicker: { noun: "时间选择器" },
+    segmentedButton: { noun: "分段按钮" },
+    avatar: { noun: "头像", label: "A" },
+    badge: { noun: "徽标", label: "3" },
+    breadcrumb: { noun: "面包屑" },
+    skeleton: { noun: "骨架屏" },
+    bottomSheet: { noun: "底部动作条", label: "底部动作条", supporting: "面板详情与快捷操作" },
+    sideSheet: { noun: "侧边抽屉", label: "用户名", supporting: "user@example.com" },
+    banner: { noun: "横幅横条", label: "已离线", supporting: "请检查网络连接后重试。" },
   },
   ko: {
     box: { noun: "상자" },
@@ -727,7 +791,130 @@ export const KIND_TEXT: Record<
     carousel: { noun: "캐러셀" },
     datePicker: { noun: "날짜 선택기", label: "3월 17일 (월)" },
     timePicker: { noun: "시간 선택기" },
+    segmentedButton: { noun: "세그먼트 버튼" },
+    avatar: { noun: "아바타", label: "A" },
+    badge: { noun: "배지", label: "3" },
+    breadcrumb: { noun: "브레드크럼" },
+    skeleton: { noun: "스켈레톤" },
+    bottomSheet: { noun: "바텀 시트", label: "바텀 시트", supporting: "시트 세부 정보 및 작업" },
+    sideSheet: { noun: "사이드 시트", label: "사용자 이름", supporting: "user@example.com" },
+    banner: { noun: "배너", label: "오프라인 상태입니다", supporting: "연결을 확인하고 다시 시도하세요." },
   },
+};
+
+export const SEGMENTED_TABS: Record<Lang, { icon: string; label: string }[]> = {
+  ja: [
+    { icon: "view_day", label: "日" },
+    { icon: "view_week", label: "週" },
+    { icon: "calendar_month", label: "月" },
+  ],
+  en: [
+    { icon: "view_day", label: "Day" },
+    { icon: "view_week", label: "Week" },
+    { icon: "calendar_month", label: "Month" },
+  ],
+  zh: [
+    { icon: "view_day", label: "天" },
+    { icon: "view_week", label: "周" },
+    { icon: "calendar_month", label: "月" },
+  ],
+  ko: [
+    { icon: "view_day", label: "일" },
+    { icon: "view_week", label: "주" },
+    { icon: "calendar_month", label: "월" },
+  ],
+};
+
+export const BREADCRUMB_TABS: Record<Lang, { icon: string; label: string }[]> = {
+  ja: [
+    { icon: "home", label: "ホーム" },
+    { icon: "", label: "カテゴリ" },
+    { icon: "", label: "詳細" },
+  ],
+  en: [
+    { icon: "home", label: "Home" },
+    { icon: "", label: "Category" },
+    { icon: "", label: "Details" },
+  ],
+  zh: [
+    { icon: "home", label: "首页" },
+    { icon: "", label: "分类" },
+    { icon: "", label: "详情" },
+  ],
+  ko: [
+    { icon: "home", label: "홈" },
+    { icon: "", label: "카테고리" },
+    { icon: "", label: "상세" },
+  ],
+};
+
+export const BOTTOM_SHEET_TABS: Record<Lang, { icon: string; label: string }[]> = {
+  ja: [
+    { icon: "share", label: "共有" },
+    { icon: "link", label: "リンクをコピー" },
+    { icon: "bookmark", label: "保存" },
+  ],
+  en: [
+    { icon: "share", label: "Share" },
+    { icon: "link", label: "Copy link" },
+    { icon: "bookmark", label: "Save" },
+  ],
+  zh: [
+    { icon: "share", label: "分享" },
+    { icon: "link", label: "复制链接" },
+    { icon: "bookmark", label: "收藏" },
+  ],
+  ko: [
+    { icon: "share", label: "공유" },
+    { icon: "link", label: "링크 복사" },
+    { icon: "bookmark", label: "저장" },
+  ],
+};
+
+export const SIDE_SHEET_TABS: Record<Lang, { icon: string; label: string }[]> = {
+  ja: [
+    { icon: "inbox", label: "受信トレイ" },
+    { icon: "star", label: "スター付き" },
+    { icon: "send", label: "送信済み" },
+    { icon: "delete", label: "ゴミ箱" },
+  ],
+  en: [
+    { icon: "inbox", label: "Inbox" },
+    { icon: "star", label: "Starred" },
+    { icon: "send", label: "Sent" },
+    { icon: "delete", label: "Trash" },
+  ],
+  zh: [
+    { icon: "inbox", label: "收件箱" },
+    { icon: "star", label: "已加星标" },
+    { icon: "send", label: "已发送" },
+    { icon: "delete", label: "回收站" },
+  ],
+  ko: [
+    { icon: "inbox", label: "받은편지함" },
+    { icon: "star", label: "별표편지함" },
+    { icon: "send", label: "보낸편지함" },
+    { icon: "delete", label: "휴지통" },
+  ],
+};
+
+export const BANNER_TABS: Record<Lang, { icon: string; label: string }[]> = {
+  ja: [
+    { icon: "", label: "閉じる" },
+    { icon: "", label: "再試行" },
+  ],
+  en: [
+    { icon: "", label: "Dismiss" },
+    { icon: "", label: "Retry" },
+  ],
+  zh: [
+    { icon: "", label: "关闭" },
+    { icon: "", label: "重试" },
+  ],
+  ko: [
+    { icon: "", label: "닫기" },
+    { icon: "", label: "다시 시도" },
+  ],
 };
 
 /** default labels of a tab row */

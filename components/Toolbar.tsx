@@ -7,6 +7,7 @@ import { ShareButton } from "./ShareMenu";
 import { Icon } from "./M3Node";
 import { Popover } from "./Menus";
 import { t, useLang } from "@/lib/i18n";
+import { GridMode } from "./GridOverlay";
 
 export type Mode = "select" | "hand";
 
@@ -92,6 +93,8 @@ export function Toolbar({
   onDraftUndo,
   onDraftSave,
   quickUndo,
+  gridMode = "off",
+  onGridMode,
 }: {
   p: Palette;
   mode: Mode;
@@ -134,6 +137,8 @@ export function Toolbar({
   onDraftSave?: () => void;
   /** after a kept draft: the header's undo, shown beside the opener so the previous design stays a tap away */
   quickUndo?: boolean;
+  gridMode?: GridMode;
+  onGridMode?: (mode: GridMode) => void;
 }) {
   const lang = useLang();
   if (mobile) {
@@ -250,6 +255,44 @@ export function Toolbar({
           </Pill>
         )}
         <Pill p={p}>
+          {onGridMode && (() => {
+            const nextMode: Record<GridMode, GridMode> = {
+              off: "8dp",
+              "8dp": "4dp",
+              "4dp": "columns",
+              columns: "dots",
+              dots: "off",
+            };
+            const icon =
+              gridMode === "8dp"
+                ? "grid_view"
+                : gridMode === "4dp"
+                ? "grid_4x4"
+                : gridMode === "columns"
+                ? "view_column"
+                : gridMode === "dots"
+                ? "grain"
+                : "grid_off";
+            const title =
+              gridMode === "8dp"
+                ? t("grid8dp", lang)
+                : gridMode === "4dp"
+                ? t("grid4dp", lang)
+                : gridMode === "columns"
+                ? t("gridColumns", lang)
+                : gridMode === "dots"
+                ? t("gridDots", lang)
+                : t("gridOff", lang);
+            return (
+              <IconBtn
+                icon={icon}
+                p={p}
+                onClick={() => onGridMode(nextMode[gridMode])}
+                title={title}
+                size={40}
+              />
+            );
+          })()}
           <IconBtn
             icon="remove"
             p={p}

@@ -7,6 +7,7 @@ import {
   CarouselLayout,
   DATE_LAYOUTS,
   DateLayout,
+  ColorToken,
   Frame,
   Item,
   KIND_SPEC,
@@ -17,6 +18,9 @@ import {
   Palette,
   RING_SIZES,
   SLIDER_DEFAULT_VALUE,
+  SKELETON_LAYOUTS,
+  SkeletonLayout,
+  skeletonLayoutOf,
   TEXT_SIZES,
   TIME_LAYOUTS,
   TOP_BAR_SIZES,
@@ -53,6 +57,7 @@ import { Icon } from "./M3Node";
 import { AiHooks } from "./Inspector";
 import { AlignBox, CornerRows, EdgeCornerRows, EntryList, FillRun, IconRow, IconStrip, ListStyleRun, NoTriggerNote, NoteSection, PartHeader, PartTabs, PlaceFn, StyleRun, Tab, TriggerSection, WidthRows, hasTrigger } from "./PartPanel";
 import { t, useLang } from "@/lib/i18n";
+import { M3_SHAPES, M3_SHAPE_PATHS, type M3ShapeCategory } from "@/lib/shapes";
 
 /* One panel for every part that is not a button. It wears the button's chrome -- the title row,
  * the two tabs, the align grid, the spec field -- and fills the design tab with only what the
@@ -362,6 +367,213 @@ function RailRows({ item, onChange, p, standalone }: { item: Item; onChange: Cha
   );
 }
 
+const SHAPE_CATEGORIES: { key: "all" | M3ShapeCategory; labelKey: "shapeAll" | "shapeBasic" | "shapeExpressive" | "shapeGeometric" }[] = [
+  { key: "all", labelKey: "shapeAll" },
+  { key: "basic", labelKey: "shapeBasic" },
+  { key: "expressive", labelKey: "shapeExpressive" },
+  { key: "geometric", labelKey: "shapeGeometric" },
+];
+
+function ImageShapePicker({
+  item,
+  onChange,
+  p,
+}: {
+  item: Item;
+  onChange: Change;
+  p: Palette;
+}) {
+  const lang = useLang();
+  const [cat, setCat] = useState<"all" | M3ShapeCategory>("all");
+  const curShape = item.shape ?? "none";
+
+  const list = cat === "all" ? M3_SHAPES : M3_SHAPES.filter((s) => s.category === cat);
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+      <Segmented<"all" | M3ShapeCategory>
+        options={SHAPE_CATEGORIES.map((c) => ({ key: c.key, title: t(c.labelKey, lang) }))}
+        value={cat}
+        onChange={setCat}
+        p={p}
+        height={32}
+        label={t("shape", lang)}
+      />
+
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(5, 1fr)",
+          gap: 6,
+          maxHeight: 180,
+          overflowY: "auto",
+          padding: "4px 2px",
+          boxSizing: "border-box",
+        }}
+      >
+        {list.map((shape) => {
+          const isActive = curShape === shape.key;
+          const path = M3_SHAPE_PATHS[shape.key];
+          return (
+            <button
+              key={shape.key}
+              type="button"
+              title={shape.name}
+              aria-label={shape.name}
+              onClick={() => onChange({ shape: shape.key === "none" ? undefined : shape.key })}
+              style={{
+                height: 40,
+                borderRadius: 10,
+                border: `1.5px solid ${isActive ? p.primary : p.outlineVariant}`,
+                background: isActive ? p.primaryContainer : p.surfaceContainerLow,
+                display: "grid",
+                placeItems: "center",
+                cursor: "pointer",
+                padding: 0,
+                transition: "all 150ms ease",
+              }}
+            >
+              {shape.key === "none" ? (
+                <svg viewBox="0 0 380 380" width={22} height={22}>
+                  <rect
+                    x="30"
+                    y="30"
+                    width="320"
+                    height="320"
+                    rx="48"
+                    fill={isActive ? p.onPrimaryContainer : p.onSurfaceVariant}
+                  />
+                </svg>
+              ) : path ? (
+                <svg viewBox="0 0 380 380" width={24} height={24}>
+                  <path d={path} fill={isActive ? p.onPrimaryContainer : p.onSurfaceVariant} />
+                </svg>
+              ) : null}
+            </button>
+          );
+        })}
+      </div>
+
+      <div style={{ fontSize: 12, color: p.onSurfaceVariant, textAlign: "center" }}>
+        {M3_SHAPES.find((s) => s.key === curShape)?.name ?? t("standardShape", lang)}
+      </div>
+    </div>
+  );
+}
+
+const STROKE_STEPS = [
+  { key: "0", value: 0 },
+  { key: "1", value: 1 },
+  { key: "2", value: 2 },
+  { key: "4", value: 4 },
+  { key: "8", value: 8 },
+] as const;
+
+const OFFSET_STEPS = [
+  { key: "0", value: 0 },
+  { key: "2", value: 2 },
+  { key: "4", value: 4 },
+  { key: "8", value: 8 },
+  { key: "12", value: 12 },
+  { key: "16", value: 16 },
+] as const;
+
+function ImageBorderRows({
+  item,
+  onChange,
+  p,
+}: {
+  item: Item;
+  onChange: Change;
+  p: Palette;
+}) {
+  const lang = useLang();
+  const strokeW = item.strokeWidth ?? 0;
+  const offset = item.strokeOffset ?? 0;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+      {/* Border Width */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ fontSize: 12, fontWeight: 500, color: p.onSurfaceVariant }}>
+          {t("borderWidth", lang)}
+        </div>
+        <NamedSizes
+          steps={STROKE_STEPS}
+          value={strokeW}
+          onChange={(v) => onChange({ strokeWidth: v === 0 ? undefined : v })}
+          p={p}
+          label={t("borderWidth", lang)}
+        />
+        <Slider
+          icon="line_weight"
+          title={t("borderWidth", lang)}
+          value={strokeW}
+          min={0}
+          max={16}
+          step={1}
+          unit="dp"
+          onChange={(v) => onChange({ strokeWidth: v === 0 ? undefined : v })}
+          p={p}
+        />
+      </div>
+
+      {/* Border Color */}
+      {strokeW > 0 && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ fontSize: 12, fontWeight: 500, color: p.onSurfaceVariant }}>
+            {t("borderColor", lang)}
+          </div>
+          <FillRun
+            value={item.strokeColor ?? "primary"}
+            onChange={(strokeColor) => onChange({ strokeColor })}
+            p={p}
+          />
+        </div>
+      )}
+
+      {/* Border Offset / Padding */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <div style={{ fontSize: 12, fontWeight: 500, color: p.onSurfaceVariant }}>
+          {t("borderOffset", lang)}
+        </div>
+        <NamedSizes
+          steps={OFFSET_STEPS}
+          value={offset}
+          onChange={(v) => onChange({ strokeOffset: v === 0 ? undefined : v })}
+          p={p}
+          label={t("borderOffset", lang)}
+        />
+        <Slider
+          icon="space_bar"
+          title={t("borderOffset", lang)}
+          value={offset}
+          min={0}
+          max={24}
+          step={1}
+          unit="dp"
+          onChange={(v) => onChange({ strokeOffset: v === 0 ? undefined : v })}
+          p={p}
+        />
+      </div>
+
+      {/* Offset Fill Color */}
+      {(offset > 0 || item.fill) && (
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          <div style={{ fontSize: 12, fontWeight: 500, color: p.onSurfaceVariant }}>
+            {t("fillColor", lang)}
+          </div>
+          <FillRun
+            value={item.fill ?? "surfaceContainerLow"}
+            onChange={(fill) => onChange({ fill })}
+            p={p}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function PartInspector({
   ai,
   item,
@@ -462,15 +674,20 @@ export function PartInspector({
       )}
 
       {/* ---------- words and icons ---------- */}
-      {(kind === "topAppBar" || kind === "searchBar" || kind === "listItem") && (
+      {(kind === "topAppBar" || kind === "searchBar" || kind === "listItem" || kind === "sideSheet" || kind === "banner") && (
         <Section id="part-text" icon="short_text" title={t("text", lang)} p={p}>
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
             {/* the words stand between the two icons they stand between on the part */}
             <IconRow slots={iconSlots} onPick={pickIcon} p={p}>
-              <Field value={item.label} onChange={(label) => onChange({ label })} placeholder={t(kind === "searchBar" ? "placeholder" : kind === "topAppBar" ? "title" : "label", lang)} p={p} />
+              <Field value={item.label} onChange={(label) => onChange({ label })} placeholder={t(kind === "searchBar" ? "placeholder" : kind === "topAppBar" || kind === "sideSheet" || kind === "banner" ? "title" : "label", lang)} p={p} />
             </IconRow>
             {spec.hasSupporting && <Field value={item.supporting ?? ""} onChange={(supporting) => onChange({ supporting })} placeholder={t("supporting", lang)} p={p} />}
           </div>
+        </Section>
+      )}
+      {kind === "bottomSheet" && (
+        <Section id="part-text" icon="short_text" title={t("text", lang)} p={p}>
+          <TextRows item={item} onChange={onChange} p={p} labelKey="title" supportingKey="supporting" />
         </Section>
       )}
       {(kind === "dialog" || isField(kind)) && (
@@ -503,16 +720,26 @@ export function PartInspector({
           <TextRows item={item} onChange={onChange} p={p} labelKey="title" supportingKey="body" paragraph />
         </Section>
       )}
-      {(isChoice(kind) || kind === "text") && (
+      {(isChoice(kind) || kind === "text" || kind === "badge") && (
         <Section id="part-text" icon="short_text" title={t("text", lang)} p={p}>
           <TextRows item={item} onChange={onChange} p={p} bold={kind === "text"} />
         </Section>
       )}
+      {kind === "avatar" && (
+        <Section id="part-text" icon="account_circle" title={t("text", lang)} p={p}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            <IconRow slots={iconSlots} onPick={(key, icon) => onChange(setIconSlot(item, key, icon))} p={p}>
+              <Field value={item.label} onChange={(label) => onChange({ label })} placeholder={t("label", lang)} p={p} />
+            </IconRow>
+            <ImageRow value={item.src} onChange={(src) => onChange({ src })} p={p} />
+          </div>
+        </Section>
+      )}
 
       {/* ---------- entries ---------- */}
-      {(kind === "bottomNav" || kind === "navRail" || kind === "tabs" || kind === "select") && (
-        <Section id="part-entries" icon={kind === "select" ? "list" : "view_column"} title={t(kind === "select" ? "options" : "tabs", lang)} p={p}>
-          <EntryList item={item} onChange={onChange} p={p} icons={kind !== "tabs" && kind !== "select"} selectable clearable={kind === "select"} />
+      {(kind === "bottomNav" || kind === "navRail" || kind === "tabs" || kind === "select" || kind === "segmentedButton" || kind === "breadcrumb" || kind === "bottomSheet" || kind === "sideSheet" || kind === "banner") && (
+        <Section id="part-entries" icon={kind === "select" ? "list" : kind === "breadcrumb" ? "alt_route" : "view_column"} title={t(kind === "select" ? "options" : "tabs", lang)} p={p}>
+          <EntryList item={item} onChange={onChange} p={p} icons={kind !== "tabs" && kind !== "select"} selectable={kind !== "bottomSheet" && kind !== "banner"} clearable={kind === "select"} />
         </Section>
       )}
       {kind === "toolbar" && (
@@ -559,9 +786,17 @@ export function PartInspector({
         </Section>
       )}
       {kind === "image" && (
-        <Section id="part-image" icon="image" title={t("image", lang)} p={p}>
-          <ImageRow key={item.id} value={item.src} onChange={(src) => onChange({ src })} p={p} />
-        </Section>
+        <>
+          <Section id="part-image" icon="image" title={t("image", lang)} p={p}>
+            <ImageRow key={item.id} value={item.src} onChange={(src) => onChange({ src })} p={p} />
+          </Section>
+          <Section id="part-shape" icon="category" title={t("shape", lang)} p={p}>
+            <ImageShapePicker item={item} onChange={onChange} p={p} />
+          </Section>
+          <Section id="part-border" icon="border_style" title={t("border", lang)} p={p}>
+            <ImageBorderRows item={item} onChange={onChange} p={p} />
+          </Section>
+        </>
       )}
       {kind === "carousel" && (
         <>
@@ -613,6 +848,17 @@ export function PartInspector({
           />
         </Section>
       )}
+      {kind === "skeleton" && (
+        <Section id="part-layout" icon="category" title={t("shape", lang)} p={p}>
+          <Segmented<SkeletonLayout>
+            options={SKELETON_LAYOUTS.map((l) => ({ key: l.key, icon: l.icon, title: l.text }))}
+            value={skeletonLayoutOf(item)}
+            onChange={(layout) => onChange({ layout })}
+            p={p}
+            label={t("shape", lang)}
+          />
+        </Section>
+      )}
 
       {/* ---------- style and colour ---------- */}
       {(kind === "card" || isField(kind) || kind === "toolbar" || kind === "searchBar") && (
@@ -627,10 +873,10 @@ export function PartInspector({
           <ListStyleRun item={item} onChange={onChange} p={p} />
         </Section>
       )}
-      {kind === "box" && (
-        /* a box's style is the theme role it is painted in */
+      {(kind === "box" || kind === "avatar" || kind === "badge" || kind === "bottomSheet" || kind === "sideSheet" || kind === "banner") && (
+        /* a box, avatar or badge style is the theme role it is painted in */
         <Section id="part-style" icon="palette" title={t("style", lang)} p={p}>
-          <FillRun value={item.fill ?? "surfaceContainerLow"} onChange={(fill) => onChange({ fill })} p={p} />
+          <FillRun value={item.fill ?? (kind === "badge" ? "primary" : kind === "avatar" ? "primaryContainer" : kind === "banner" ? "surfaceContainer" : "surfaceContainerLow")} onChange={(fill) => onChange({ fill })} p={p} />
         </Section>
       )}
 
@@ -640,10 +886,9 @@ export function PartInspector({
           <RailRows item={item} onChange={onChange} p={p} standalone={railStandalone} />
         </Section>
       )}
-      {kind === "box" && (
-        /* a box with a handle along its top is a bottom sheet */
+      {(kind === "box" || kind === "bottomSheet") && (
         <Section id="part-state" icon="tune" title={t("state", lang)} p={p}>
-          <Toggle on={!!item.checked} onChange={(checked) => onChange({ checked })} p={p} icon="drag_handle" label={t("handle", lang)} grow />
+          <Toggle on={kind === "bottomSheet" ? item.checked !== false : !!item.checked} onChange={(checked) => onChange({ checked })} p={p} icon="drag_handle" label={t("handle", lang)} grow />
         </Section>
       )}
       {kind === "loadingIndicator" && (
@@ -680,6 +925,43 @@ export function PartInspector({
             {kind === "bottomNav" && <EdgeCornerRows item={item} onChange={onChange} p={p} />}
           </>,
         )}
+      {kind === "bottomSheet" &&
+        sizeSection(
+          <>
+            {widthRows()}
+            {heightRow([
+              { key: "s", value: 180 },
+              { key: "m", value: 240 },
+              { key: "l", value: 320 },
+              { key: "full", value: Math.min(frameH - 64, 480) },
+            ])}
+            <EdgeCornerRows item={item} onChange={onChange} p={p} />
+          </>,
+        )}
+      {kind === "sideSheet" &&
+        sizeSection(
+          <>
+            {widthRows()}
+            {heightRow([
+              { key: "half", value: Math.round(frameH / 2) },
+              { key: "full", value: frameH },
+            ])}
+            <CornerRows item={item} onChange={onChange} p={p} />
+          </>,
+        )}
+      {kind === "banner" &&
+        sizeSection(
+          <>
+            {widthRows()}
+            {heightRow([
+              { key: "s", value: 88 },
+              { key: "m", value: 104 },
+              { key: "l", value: 120 },
+              { key: "xl", value: 144 },
+            ])}
+            <CornerRows item={item} onChange={onChange} p={p} />
+          </>,
+        )}
       {kind === "navRail" &&
         sizeSection(
           <>
@@ -714,7 +996,9 @@ export function PartInspector({
                 : undefined,
             )}
             {widthRows()}
-            {(kind === "box" || kind === "image") && <CornerRows item={item} onChange={onChange} p={p} />}
+            {(kind === "box" || (kind === "image" && (!item.shape || item.shape === "none"))) && (
+              <CornerRows item={item} onChange={onChange} p={p} />
+            )}
           </>,
         )}
       {kind === "carousel" &&
@@ -722,7 +1006,20 @@ export function PartInspector({
           /* a carousel runs the width of the screen it is on: its height is the one measure its author sets */
           heightRow(CAROUSEL_HEIGHTS),
         )}
-      {(kind === "datePicker" || kind === "timePicker") && sizeSection(widthRows())}
+      {(kind === "datePicker" || kind === "timePicker" || kind === "segmentedButton" || kind === "breadcrumb") && sizeSection(widthRows())}
+      {kind === "skeleton" &&
+        sizeSection(
+          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+            {widthRows()}
+            {heightRow([
+              { key: "xs", value: 24 },
+              { key: "s", value: 48 },
+              { key: "m", value: 72 },
+              { key: "l", value: 120 },
+              { key: "xl", value: 200 },
+            ])}
+          </div>,
+        )}
       {kind === "slider" &&
         sizeSection(
           <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
@@ -736,6 +1033,19 @@ export function PartInspector({
             <Slider icon="open_in_full" title={t("size", lang)} value={item.size ?? spec.w} min={spec.size!.min} max={spec.size!.max} step={spec.size!.step} onChange={(size) => onChange({ size })} p={p} />
             <NamedSizes steps={LOADING_SIZES} value={item.size ?? spec.w} onChange={(size) => onChange({ size })} p={p} />
           </div>,
+        )}
+      {kind === "avatar" &&
+        sizeSection(
+          <Slider
+            icon="open_in_full"
+            title={t("size", lang)}
+            value={item.size ?? 40}
+            min={24}
+            max={96}
+            step={4}
+            onChange={(size) => onChange({ size })}
+            p={p}
+          />,
         )}
       {isProgress(kind) &&
         sizeSection(

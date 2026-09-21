@@ -108,6 +108,8 @@ import {
   contentWidth,
 } from "@/lib/tokens";
 import { Icon, M3Node, M3Static, MeasuredContent } from "@/components/M3Node";
+import { AltMeasurementOverlay } from "@/components/AltMeasurement";
+import { GridOverlay, GridMode } from "@/components/GridOverlay";
 import { CORNER_GAIN, CORNERS, HandleSide, SizeHandles } from "@/components/SizeHandles";
 import { LayersPanel } from "@/components/Layers";
 import { FrameSizePicker, Inspector } from "@/components/Inspector";
@@ -235,17 +237,18 @@ type Snapshot = { groups: Group[]; frames: Frame[]; meta?: DocMeta };
 /** The parts a lone one of can be resized on the canvas itself: the controls that carry a size,
  *  and the indicators, whose width is the thing an author reaches for most. */
 const HANDLED = new Set<Kind>([
-  "button", "iconButton", "chip", "splitButton", "fab", "extendedFab",
+  "button", "iconButton", "chip", "splitButton", "segmentedButton", "avatar", "fab", "extendedFab",
   "linearProgress", "circularProgress", "loadingIndicator", "slider", "carousel",
   "card", "box", "image", "camera", "map", "listItem", "searchBar", "textField", "select", "switch", "divider",
-  "topAppBar", "bottomNav", "tabs", "navRail",
+  "topAppBar", "bottomNav", "tabs", "navRail", "breadcrumb", "skeleton",
+  "bottomSheet", "sideSheet", "banner",
 ]);
 /** parts held by the four points around them: a circle's diameter, a label's height */
-const ROUND = new Set<Kind>(["iconButton", "chip", "splitButton", "fab", "extendedFab", "circularProgress", "loadingIndicator"]);
+const ROUND = new Set<Kind>(["iconButton", "chip", "splitButton", "fab", "extendedFab", "circularProgress", "loadingIndicator", "avatar"]);
 /** the button family: sized on the button scale rather than by the bounds their kind is given */
 const BUTTON_LIKE = new Set<Kind>(["button", "iconButton", "chip", "splitButton", "fab", "extendedFab"]);
 /** these are held by their two ends; they have no height of their own to pull on */
-const WIDE = new Set<Kind>(["linearProgress", "slider", "listItem", "searchBar", "textField", "select", "switch", "divider", "topAppBar", "bottomNav", "tabs"]);
+const WIDE = new Set<Kind>(["linearProgress", "slider", "listItem", "searchBar", "textField", "select", "switch", "divider", "topAppBar", "bottomNav", "tabs", "segmentedButton", "breadcrumb"]);
 const BAR_SIDES = ["left", "right"] as const;
 /** a carousel runs the width of the screen, a rail the height of it: only the other measure is pulled on */
 const TALL = new Set<Kind>(["carousel", "navRail"]);
@@ -495,6 +498,23 @@ export default function Editor({ initialLang, onReady }: { initialLang: Lang; on
   const [cameraEasing, setCameraEasing] = useState(false);
   const [mode, setMode] = useState<Mode>("select");
   const [spaceHeld, setSpaceHeld] = useState(false);
+  const [altHeld, setAltHeld] = useState(false);
+  const [altHoveredGroup, setAltHoveredGroup] = useState<Group | null>(null);
+  const [gridMode, setGridMode] = useState<GridMode>(() => {
+    if (typeof window === "undefined") return "off";
+    try {
+      const saved = localStorage.getItem("m3e:grid");
+      return saved === "4dp" || saved === "8dp" || saved === "columns" || saved === "dots" ? saved : "off";
+    } catch {
+      return "off";
+    }
+  });
+  const onGridMode = useCallback((next: GridMode) => {
+    setGridMode(next);
+    try {
+      localStorage.setItem("m3e:grid", next);
+    } catch {}
+  }, []);
   const [leftOpen, setLeftOpen] = useState(true);
   const [rightOpen, setRightOpen] = useState(true);
   const [leftW, setLeftW] = useState(RAIL_W + 268);
@@ -3312,6 +3332,9 @@ export default function Editor({ initialLang, onReady }: { initialLang: Lang; on
         );
         return;
       }
+      if (e.key === "Alt" || e.altKey) {
+        setAltHeld(true);
+      }
       if (mod) return;
       if (e.key === "v" || e.key === "V") setMode("select");
       if (e.key === "h" || e.key === "H") setMode("hand");
@@ -3321,12 +3344,23 @@ export default function Editor({ initialLang, onReady }: { initialLang: Lang; on
     };
     const onKeyUp = (e: KeyboardEvent) => {
       if (e.key === " ") setSpaceHeld(false);
+      if (e.key === "Alt") {
+        setAltHeld(false);
+        setAltHoveredGroup(null);
+      }
+    };
+    const onBlur = () => {
+      setSpaceHeld(false);
+      setAltHeld(false);
+      setAltHoveredGroup(null);
     };
     window.addEventListener("keydown", onKey);
     window.addEventListener("keyup", onKeyUp);
+    window.addEventListener("blur", onBlur);
     return () => {
       window.removeEventListener("keydown", onKey);
       window.removeEventListener("keyup", onKeyUp);
+      window.removeEventListener("blur", onBlur);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [
@@ -3352,6 +3386,69 @@ export default function Editor({ initialLang, onReady }: { initialLang: Lang; on
   ]);
   const openPreviewRef = useRef(openPreview);
   openPreviewRef.current = openPreview;
+
+  useEffect(() => {
+    if (!altHeld || selectedIds.length === 0) {
+      setAltHoveredGroup(null);
+      return;
+    }
+    const onMove = (e: PointerEvent) => {
+      if (!canvasRef.current) return;
+      const r = canvasRef.current.getBoundingClientRect();
+      const wx = (e.clientX - r.left - viewRef.current.x) / viewRef.current.z;
+      const wy = (e.clientY - r.top - viewRef.current.y) / viewRef.current.z;
+      const selSet = new Set(selectedIds);
+      const curGroups = groupsRef.current;
+      const curWidths = widthsRef.current;
+      let hit: Group | null = null;
+      for (let i = curGroups.length - 1; i >= 0; i--) {
+        const g = curGroups[i];
+        if (g.items.some((it) => selSet.has(it.id))) continue;
+        const b = groupBounds(g, curWidths);
+        if (wx >= b.l && wx <= b.r && wy >= b.t && wy <= b.b) {
+          hit = g;
+          break;
+        }
+      }
+      setAltHoveredGroup(hit);
+    };
+    window.addEventListener("pointermove", onMove);
+    return () => window.removeEventListener("pointermove", onMove);
+  }, [altHeld, selectedIds]);
+
+  const altBoxes = useMemo(() => {
+    if (!altHeld || selectedIds.length === 0) return null;
+    const selSet = new Set(selectedIds);
+    let selBox: { l: number; t: number; r: number; b: number } | null = null;
+    for (const g of groups) {
+      if (g.items.some((it) => selSet.has(it.id))) {
+        const b = groupBounds(g, widths);
+        if (!selBox) selBox = { ...b };
+        else selBox = { l: Math.min(selBox.l, b.l), t: Math.min(selBox.t, b.t), r: Math.max(selBox.r, b.r), b: Math.max(selBox.b, b.b) };
+      }
+    }
+    if (!selBox) return null;
+
+    let targetBox: { l: number; t: number; r: number; b: number } | null = null;
+    if (altHoveredGroup) {
+      targetBox = groupBounds(altHoveredGroup, widths);
+    }
+
+    let frameBox: { l: number; t: number; r: number; b: number } | null = null;
+    if (!targetBox && frames.length > 0) {
+      const f =
+        frames.find((fr) => {
+          const { w, h } = frameSizeOf(fr);
+          return selBox!.l >= fr.x - 40 && selBox!.r <= fr.x + w + 40 && selBox!.t >= fr.y - 40 && selBox!.b <= fr.y + h + 40;
+        }) ?? frames[0];
+      if (f) {
+        const { w, h } = frameSizeOf(f);
+        frameBox = { l: f.x, t: f.y, r: f.x + w, b: f.y + h };
+      }
+    }
+
+    return { selBox, targetBox, frameBox };
+  }, [altHeld, selectedIds, groups, widths, altHoveredGroup, frames]);
 
   /* ---------- render ---------- */
   /* The hole a run holds for a part: where it is, how big, and whether it is still wanted. It
@@ -4136,9 +4233,11 @@ export default function Editor({ initialLang, onReady }: { initialLang: Lang; on
                 transform: `translate(${view.x}px, ${view.y}px) scale(${view.z})`,
                 transformOrigin: "0 0",
                 transition: cameraEasing ? `transform ${SETTLE_MS}ms cubic-bezier(0.2, 0, 0, 1)` : undefined,
-                willChange: "transform",
                 visibility: viewReady ? "visible" : "hidden",
                 fontFamily: fontFamilyOf(theme.font, lang),
+                WebkitFontSmoothing: "antialiased",
+                MozOsxFontSmoothing: "grayscale",
+                textRendering: "optimizeLegibility",
               }}
             >
               {frame === "phone" &&
@@ -4217,6 +4316,15 @@ export default function Editor({ initialLang, onReady }: { initialLang: Lang; on
                             transition: SIZE_TRANSITION,
                           }}
                         >
+                          {gridMode !== "off" && (
+                            <GridOverlay
+                              mode={gridMode}
+                              width={w}
+                              height={h}
+                              dark={theme.dark}
+                              id={f.id}
+                            />
+                          )}
                           {groups
                             .filter((g) => frameOf.get(g.id) === f.id)
                             .map((g) => renderGroup(g, f.x, f.y))}
@@ -4233,6 +4341,27 @@ export default function Editor({ initialLang, onReady }: { initialLang: Lang; on
                     </div>
                   );
                 })}
+
+              {frame === "blank" && gridMode !== "off" && (
+                <div
+                  style={{
+                    position: "absolute",
+                    left: -2000,
+                    top: -2000,
+                    width: 6000,
+                    height: 6000,
+                    pointerEvents: "none",
+                  }}
+                >
+                  <GridOverlay
+                    mode={gridMode === "columns" ? "8dp" : gridMode}
+                    width={6000}
+                    height={6000}
+                    dark={theme.dark}
+                    id="blank"
+                  />
+                </div>
+              )}
 
               {groups
                 .filter((g) => !frameOf.has(g.id))
@@ -4417,6 +4546,16 @@ export default function Editor({ initialLang, onReady }: { initialLang: Lang; on
                   }}
                 />
               )}
+
+              {altBoxes && (
+                <AltMeasurementOverlay
+                  selBox={altBoxes.selBox}
+                  targetBox={altBoxes.targetBox}
+                  frameBox={altBoxes.frameBox}
+                  z={view.z}
+                  p={p}
+                />
+              )}
             </div>
           </div>
 
@@ -4465,6 +4604,8 @@ export default function Editor({ initialLang, onReady }: { initialLang: Lang; on
             onDraftUndo={undoDraft}
             onDraftSave={() => saveProject(doc)}
             quickUndo={quickUndo}
+            gridMode={gridMode}
+            onGridMode={onGridMode}
             rightInset={showRight ? rightW : 0}
             mobile={isMobile}
             onSettings={() => setSheet(sheet === "settings" ? null : "settings")}

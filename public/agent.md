@@ -51,7 +51,7 @@ Rough placement is fine. The person presses **Tidy** and bars snap to the edges,
 }
 ```
 
-`theme` is optional. `contrast`: `standard | medium | high`. `shape`: `square | rounded | full`. `font`: `roboto | robotoFlex | robotoSerif | system`. `motion`: `standard | expressive`. `bothModes: true` asks for light and dark; `dark` picks which one the canvas shows.
+`theme` is optional. `contrast`: `standard | medium | high`. `shape`: `square | rounded | full`. `font`: `roboto | robotoFlex | robotoSerif | inter | plusJakartaSans | outfit | openSans | system`. `motion`: `standard | expressive`. `bothModes: true` asks for light and dark; `dark` picks which one the canvas shows.
 
 ### Screens (`frames`)
 
@@ -128,6 +128,10 @@ Sizes are in dp; `size` is the width unless noted. Content width inside the phon
 | `map` | map placeholder | `size` width, `size2` height | 380 × 285 |
 | `divider` | divider | | 380 × 16 |
 | `badge` | badge | `label` (empty for a dot) | |
+| `avatar` | avatar | `label` (initials), `icon`, `src` (image URL), `size` | 40 × 40 |
+| `segmentedButton` | segmented button | `tabs` as segments `{label, icon}`, `selected` index | 280 × 40 |
+| `breadcrumb` | breadcrumb navigation | `tabs` as path steps `{label, icon}` | 380 × 36 |
+| `skeleton` | skeleton placeholder | `variant` `rounded` / `circular` / `square`, `size` width, `size2` height | 380 × 72 |
 | `loadingIndicator` | M3 Expressive loading indicator | `contained` | 48 × 48 |
 | `linearProgress` | linear progress | `value` or omit for indeterminate, `wavy`, `trackThickness` 2 to 16 (omit for 4) | 380 × 24 |
 | `circularProgress` | circular progress | `value` or omit, `wavy`, `trackThickness` 2 to 16, capped at a sixth of `size` | 48 × 48 |

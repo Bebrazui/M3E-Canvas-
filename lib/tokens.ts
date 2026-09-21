@@ -1,5 +1,5 @@
 import type { CSSProperties } from "react";
-import { FAB_MENU_TABS, KIND_TEXT, Lang, NAV_TABS, SPLIT_MENU_TABS, TAB_LABELS, getLang, t, SELECT_OPTIONS } from "./i18n";
+import { BANNER_TABS, BOTTOM_SHEET_TABS, BREADCRUMB_TABS, FAB_MENU_TABS, KIND_TEXT, Lang, NAV_TABS, SEGMENTED_TABS, SIDE_SHEET_TABS, SPLIT_MENU_TABS, TAB_LABELS, getLang, t, SELECT_OPTIONS } from "./i18n";
 import { Contrast, isLightColor, schemeFromSeed } from "./color";
 
 /* ---------- geometry ---------- */
@@ -434,7 +434,7 @@ export const PALETTES: Palette[] = PRESETS.map((p) => ({ ...p, secondary: scheme
 
 /* ---------- theme: the four expressive axes ---------- */
 export type ShapeScale = "square" | "rounded" | "full";
-export type FontKey = "roboto" | "robotoFlex" | "robotoSerif" | "system";
+export type FontKey = "roboto" | "robotoFlex" | "robotoSerif" | "inter" | "plusJakartaSans" | "outfit" | "openSans" | "system";
 export type MotionScheme = "standard" | "expressive";
 export type { Contrast };
 
@@ -477,6 +477,10 @@ export const FONTS: { key: FontKey; label: string; family: string; /** Google Fo
   { key: "roboto", label: "Roboto", family: "Roboto, system-ui, sans-serif" },
   { key: "robotoFlex", label: "Roboto Flex", family: "'Roboto Flex', Roboto, system-ui, sans-serif", google: "Roboto+Flex:wght@400;500;600;700" },
   { key: "robotoSerif", label: "Roboto Serif", family: "'Roboto Serif', Georgia, serif", google: "Roboto+Serif:wght@400;500;600;700" },
+  { key: "inter", label: "Inter", family: "'Inter', system-ui, sans-serif", google: "Inter:wght@400;500;600;700" },
+  { key: "plusJakartaSans", label: "Plus Jakarta Sans", family: "'Plus Jakarta Sans', system-ui, sans-serif", google: "Plus+Jakarta+Sans:wght@400;500;600;700" },
+  { key: "outfit", label: "Outfit", family: "'Outfit', system-ui, sans-serif", google: "Outfit:wght@400;500;600;700" },
+  { key: "openSans", label: "Open Sans", family: "'Open Sans', system-ui, sans-serif", google: "Open+Sans:wght@400;500;600;700" },
   { key: "system", label: "System", family: "system-ui, -apple-system, 'Segoe UI', sans-serif" },
 ];
 
@@ -613,7 +617,15 @@ export type Kind =
   | "radio"
   | "carousel"
   | "datePicker"
-  | "timePicker";
+  | "timePicker"
+  | "segmentedButton"
+  | "avatar"
+  | "badge"
+  | "breadcrumb"
+  | "skeleton"
+  | "bottomSheet"
+  | "sideSheet"
+  | "banner";
 
 /** how a carousel arranges its items: M3's four layouts */
 export type CarouselLayout = "multiBrowse" | "uncontained" | "hero" | "fullScreen";
@@ -636,12 +648,20 @@ export const TIME_LAYOUTS: { key: TimeLayout; icon: string; text: "timeDial" | "
   { key: "dial", icon: "schedule", text: "timeDial" },
   { key: "input", icon: "keyboard", text: "dateInput" },
 ];
-export type PartLayout = CarouselLayout | DateLayout | TimeLayout;
+export type SkeletonLayout = "rounded" | "circular" | "square";
+export const SKELETON_LAYOUTS: { key: SkeletonLayout; icon: string; text: string }[] = [
+  { key: "rounded", icon: "rounded_corner", text: "Rounded" },
+  { key: "circular", icon: "circle", text: "Circular" },
+  { key: "square", icon: "crop_square", text: "Square" },
+];
+export type PartLayout = CarouselLayout | DateLayout | TimeLayout | SkeletonLayout;
 export const carouselLayoutOf = (it: Item): CarouselLayout =>
   CAROUSEL_LAYOUTS.some((l) => l.key === it.layout) ? (it.layout as CarouselLayout) : "multiBrowse";
 export const dateLayoutOf = (it: Item): DateLayout =>
   DATE_LAYOUTS.some((l) => l.key === it.layout) ? (it.layout as DateLayout) : "modal";
 export const timeLayoutOf = (it: Item): TimeLayout => (it.layout === "input" ? "input" : "dial");
+export const skeletonLayoutOf = (it: Item): SkeletonLayout =>
+  it.layout === "circular" || it.layout === "square" ? it.layout : "rounded";
 /** the share a progress indicator counts up to when it is first asked for one, and where a
  *  slider's handle first sits */
 export const PROGRESS_DEFAULT_VALUE = 60;
@@ -1547,6 +1567,154 @@ export const KIND_SPEC: Record<Kind, KindSpec> = {
     defLabel: "選択肢",
     defIcon: null,
   },
+  segmentedButton: {
+    label: "Segmented Button",
+    noun: "セグメントボタン",
+    category: "actions",
+    paletteIcon: "splitscreen",
+    w: 280,
+    h: 40,
+    radius: 20,
+    hasVariant: false,
+    hasLabel: false,
+    hasSupporting: false,
+    hasIcon: false,
+    hasTabs: true,
+    size: { min: 140, max: PHONE_W, step: 4, icon: "width", presets: [200, 280, 320] },
+    defLabel: "",
+    defIcon: null,
+    defSize: 280,
+  },
+  avatar: {
+    label: "Avatar",
+    noun: "アバター",
+    category: "content",
+    paletteIcon: "account_circle",
+    w: 40,
+    h: 40,
+    radius: 20,
+    hasVariant: true,
+    hasLabel: true,
+    hasSupporting: false,
+    hasIcon: true,
+    size: { min: 24, max: 96, step: 4, icon: "open_in_full", presets: [24, 32, 40, 48, 56, 72] },
+    defLabel: "A",
+    defIcon: "person",
+    defSize: 40,
+    defVariant: "tonal",
+  },
+  badge: {
+    label: "Badge",
+    noun: "バッジ",
+    category: "actions",
+    paletteIcon: "mark_chat_unread",
+    w: 24,
+    h: 24,
+    radius: 12,
+    hasVariant: false,
+    hasLabel: true,
+    hasSupporting: false,
+    hasIcon: false,
+    defLabel: "3",
+    defIcon: null,
+    defSize: 24,
+  },
+  breadcrumb: {
+    label: "Breadcrumb",
+    noun: "ブレッドクラム",
+    category: "navigation",
+    paletteIcon: "alt_route",
+    w: CONTENT_W,
+    h: 36,
+    radius: 8,
+    hasVariant: false,
+    hasLabel: false,
+    hasSupporting: false,
+    hasIcon: false,
+    hasTabs: true,
+    size: { min: 160, max: PHONE_W, step: 4, icon: "width", presets: WIDTH_PRESETS },
+    defLabel: "",
+    defIcon: null,
+    defSize: CONTENT_W,
+  },
+  skeleton: {
+    label: "Skeleton",
+    noun: "スケルトン",
+    category: "progress",
+    paletteIcon: "animation",
+    w: CONTENT_W,
+    h: 72,
+    radius: 16,
+    hasVariant: false,
+    hasLabel: false,
+    hasSupporting: false,
+    hasIcon: false,
+    size: { min: 40, max: PHONE_W, step: 4, icon: "width", presets: WIDTH_PRESETS },
+    size2: { min: 16, max: 360, step: 4, icon: "height", presets: [24, 48, 72, 120, 200] },
+    defLabel: "",
+    defIcon: null,
+    defSize: CONTENT_W,
+  },
+  bottomSheet: {
+    label: "Bottom Sheet",
+    noun: "ボトムシート",
+    category: "containment",
+    paletteIcon: "call_to_action",
+    w: PHONE_W,
+    h: 240,
+    radius: 28,
+    hasVariant: false,
+    hasLabel: true,
+    hasSupporting: true,
+    hasIcon: false,
+    hasTabs: true,
+    size: { min: 280, max: PHONE_W, step: 4, icon: "width", presets: WIDTH_PRESETS },
+    size2: { min: 140, max: PHONE_H, step: 4, icon: "height", presets: [180, 240, 320, 420] },
+    defLabel: "ボトムシート",
+    defSupporting: "シートの詳細やアクション",
+    defIcon: null,
+    defSize: PHONE_W,
+  },
+  sideSheet: {
+    label: "Side Sheet",
+    noun: "サイドシート",
+    category: "navigation",
+    paletteIcon: "side_navigation",
+    w: 300,
+    h: 480,
+    radius: 28,
+    hasVariant: false,
+    hasLabel: true,
+    hasSupporting: true,
+    hasIcon: true,
+    hasTabs: true,
+    size: { min: 240, max: 360, step: 4, icon: "width", presets: [260, 280, 300, 320] },
+    size2: { min: 320, max: PHONE_H, step: 4, icon: "height", presets: HEIGHT_PRESETS },
+    defLabel: "ユーザー名",
+    defSupporting: "user@example.com",
+    defIcon: "account_circle",
+    defSize: 300,
+  },
+  banner: {
+    label: "Banner",
+    noun: "バナー",
+    category: "containment",
+    paletteIcon: "ad_units",
+    w: PHONE_W,
+    h: 104,
+    radius: 0,
+    hasVariant: false,
+    hasLabel: true,
+    hasSupporting: true,
+    hasIcon: true,
+    hasTabs: true,
+    size: { min: 240, max: PHONE_W, step: 4, icon: "width", presets: WIDTH_PRESETS },
+    size2: { min: 72, max: 200, step: 4, icon: "height", presets: [88, 104, 120, 144] },
+    defLabel: "オフライン",
+    defSupporting: "接続を確認して再試行してください。",
+    defIcon: "cloud_off",
+    defSize: PHONE_W,
+  },
 };
 
 export const KIND_ORDER: Kind[] = [
@@ -1555,6 +1723,9 @@ export const KIND_ORDER: Kind[] = [
   "fab",
   "extendedFab",
   "splitButton",
+  "segmentedButton",
+  "avatar",
+  "badge",
   "fabMenu",
   "chip",
   "topAppBar",
@@ -1562,6 +1733,7 @@ export const KIND_ORDER: Kind[] = [
   "navRail",
   "toolbar",
   "tabs",
+  "breadcrumb",
   "searchBar",
   "card",
   "listItem",
@@ -1585,6 +1757,10 @@ export const KIND_ORDER: Kind[] = [
   "loadingIndicator",
   "linearProgress",
   "circularProgress",
+  "skeleton",
+  "bottomSheet",
+  "sideSheet",
+  "banner",
 ];
 
 /* ---------- screen data ---------- */
@@ -1643,8 +1819,16 @@ export type Item = {
   bold?: boolean;
   /** height for free-form boxes, and for a button following the M3 size scale */
   size2?: number;
-  /** palette token used as background (boxes, list items) */
+  /** palette token used as background (boxes, list items, image offset) */
   fill?: ColorToken;
+  /** custom shape for image parts (circle, square, sunny, cookie, etc.) */
+  shape?: string;
+  /** stroke width in dp for images (0..16) */
+  strokeWidth?: number;
+  /** stroke color token for images */
+  strokeColor?: ColorToken;
+  /** border offset / padding in dp for images (0..24) */
+  strokeOffset?: number;
   /** background behind a list item's leading icon; "none" draws the icon bare */
   iconFill?: ColorToken | "none";
   /** data URL of a user-picked image */
@@ -1801,6 +1985,12 @@ export const ENTRY_BOUNDS: Partial<Record<Kind, { min: number; max: number }>> =
   bottomNav: { min: 3, max: 5 },
   navRail: { min: 3, max: 7 },
   toolbar: { min: 2, max: 6 },
+  tabs: { min: 2, max: 8 },
+  segmentedButton: { min: 2, max: 5 },
+  breadcrumb: { min: 2, max: 6 },
+  bottomSheet: { min: 1, max: 8 },
+  sideSheet: { min: 1, max: 10 },
+  banner: { min: 1, max: 3 },
 };
 
 /** target id for the menu a FAB opens: the entries rise out of the button itself */
@@ -1902,7 +2092,7 @@ export function actionSlotsOf(it: Item): IconSlot[] {
   if (it.kind === "topAppBar" || it.kind === "searchBar" || it.kind === "bottomNav" || it.kind === "navRail" || it.kind === "toolbar") return iconSlotsOf(it).filter((s) => !!s.value);
   /* the entries of a menu, whichever FAB opens it */
   if (it.kind === "fabMenu" || opensMenu(it)) return (it.tabs ?? []).map((t, i) => ({ key: `tab:${i}`, label: t.label || `${i + 1}`, value: t.icon || null }));
-  if (it.kind === "tabs") return (it.tabs ?? []).map((t, i) => ({ key: `tab:${i}`, label: t.label || `${i + 1}`, value: null }));
+  if (it.kind === "tabs" || it.kind === "segmentedButton" || it.kind === "breadcrumb") return (it.tabs ?? []).map((t, i) => ({ key: `tab:${i}`, label: t.label || `${i + 1}`, value: null }));
   /* every card of a carousel is a place of its own to be sent from */
   if (it.kind === "carousel") return carouselCardsOf(it).map((_, i) => ({ key: `tab:${i}`, label: `${i + 1}`, value: null }));
   return [];
@@ -1931,7 +2121,7 @@ export function actionsOf(it: Item): { slot: string; action: Action }[] {
 export const RIPPLE_KINDS: Kind[] = ["button", "iconButton", "chip", "fab", "extendedFab", "splitButton"];
 
 /** kinds a user can tap in the preview */
-export const TAPPABLE: Kind[] = ["button", "iconButton", "fab", "extendedFab", "chip", "listItem", "card", "image", "text", "splitButton", "radio", "datePicker", "timePicker"];
+export const TAPPABLE: Kind[] = ["button", "iconButton", "fab", "extendedFab", "chip", "listItem", "card", "image", "text", "splitButton", "radio", "datePicker", "timePicker", "segmentedButton", "avatar", "badge", "breadcrumb"];
 
 /** palette roles a user may pick as a background */
 export type ColorToken =
@@ -2345,6 +2535,16 @@ export function defaultTabsFor(kind: Kind): NavTab[] {
       return FAB_MENU_TABS[getLang()].map((t) => ({ ...t }));
     case "splitButton":
       return SPLIT_MENU_TABS[getLang()].map((t) => ({ ...t }));
+    case "segmentedButton":
+      return SEGMENTED_TABS[getLang()].map((t) => ({ ...t }));
+    case "breadcrumb":
+      return BREADCRUMB_TABS[getLang()].map((t) => ({ ...t }));
+    case "bottomSheet":
+      return BOTTOM_SHEET_TABS[getLang()].map((t) => ({ ...t }));
+    case "sideSheet":
+      return SIDE_SHEET_TABS[getLang()].map((t) => ({ ...t }));
+    case "banner":
+      return BANNER_TABS[getLang()].map((t) => ({ ...t }));
     case "toolbar":
       return TOOLBAR_ICONS.map((icon) => ({ icon, label: "" }));
     default:
@@ -2380,6 +2580,10 @@ export function makeItem(kind: Kind): Item {
   }
   if (kind === "datePicker") it.layout = "modal";
   if (kind === "timePicker") it.layout = "dial";
+  if (kind === "skeleton") {
+    it.size2 = 72;
+    it.layout = "rounded";
+  }
   if (kind === "bottomNav") {
     it.tabs = defaultTabs();
     it.radiusTop = 0;
@@ -2389,8 +2593,28 @@ export function makeItem(kind: Kind): Item {
     it.tabs = defaultTabs();
     it.railExpanded = false;
   }
-  if (kind === "tabs" || kind === "fabMenu" || kind === "select" || kind === "splitButton") it.tabs = defaultTabsFor(kind);
+  if (kind === "tabs" || kind === "fabMenu" || kind === "select" || kind === "splitButton" || kind === "segmentedButton" || kind === "breadcrumb" || kind === "bottomSheet" || kind === "sideSheet" || kind === "banner") it.tabs = defaultTabsFor(kind);
+  if (kind === "segmentedButton" || kind === "sideSheet") it.selected = 0;
   if (kind === "toolbar") it.tabs = defaultTabsFor(kind).slice(0, 4);
+  if (kind === "bottomSheet") {
+    it.size2 = 240;
+    it.radiusTop = 28;
+    it.radiusBottom = 0;
+    it.fill = "surfaceContainerLow";
+    it.checked = true;
+  }
+  if (kind === "sideSheet") {
+    it.size2 = 480;
+    it.radiusTop = 28;
+    it.radiusBottom = 28;
+    it.fill = "surfaceContainerLow";
+  }
+  if (kind === "banner") {
+    it.size2 = 104;
+    it.radiusTop = 0;
+    it.radiusBottom = 0;
+    it.fill = "surfaceContainer";
+  }
   return it;
 }
 
@@ -2445,7 +2669,19 @@ export function sizeOf(it: Item, widths: Record<string, number>) {
     case "iconButton":
     case "circularProgress":
     case "loadingIndicator":
+    case "avatar":
       return { w: n, h: n };
+    case "badge": {
+      const isDot = !it.label || it.label.trim() === "";
+      const bw = isDot ? 12 : Math.max(20, it.label.length * 8 + 12);
+      const bh = isDot ? 12 : 20;
+      return { w: bw, h: bh };
+    }
+    case "skeleton":
+    case "bottomSheet":
+    case "sideSheet":
+    case "banner":
+      return { w: n, h: it.size2 ?? s.h };
     /* a picture is as tall as it was made; square until it is given a height of its own */
     case "image":
       return { w: n, h: it.size2 ?? n };
@@ -2457,6 +2693,8 @@ export function sizeOf(it: Item, widths: Record<string, number>) {
       /* the status-bar inset belongs to a phone: a bar wider than one has no status bar above it.
        * (An Android tablet does; the canvas leaves that to the prompt.) */
       return { w: n, h: topBarHeightOf(it) + (n > PHONE_W ? 0 : STATUS_BAR_H) };
+    case "breadcrumb":
+    case "segmentedButton":
     case "searchBar":
     case "bottomNav":
     case "listItem":
@@ -2528,9 +2766,12 @@ export function baseRadii(it: Item): Radii {
     case "loadingIndicator":
       return uniformRadii((it.size ?? 48) / 2);
     case "card":
-    case "image":
       if (it.corners) return { ...it.corners };
-    // falls through
+      return uniformRadii(it.radiusTop ?? scaleR(s.radius));
+    case "image":
+      if (it.shape && it.shape !== "none") return uniformRadii(0);
+      if (it.corners) return { ...it.corners };
+      return uniformRadii(it.radiusTop ?? scaleR(s.radius));
     case "camera":
     case "map":
       return uniformRadii(it.radiusTop ?? scaleR(s.radius));
@@ -2541,6 +2782,20 @@ export function baseRadii(it: Item): Radii {
       return uniformRadii(scaleR(buttonHeightOf(it) / 2));
     case "radio":
       return uniformRadii(s.radius);
+    case "bottomSheet": {
+      const top = it.radiusTop ?? scaleR(28);
+      const btm = it.radiusBottom ?? 0;
+      return { tl: top, tr: top, bl: btm, br: btm };
+    }
+    case "sideSheet": {
+      if (it.corners) return { ...it.corners };
+      const top = it.radiusTop ?? scaleR(28);
+      const btm = it.radiusBottom ?? scaleR(28);
+      return { tl: 0, bl: 0, tr: top, br: btm };
+    }
+    case "banner":
+      if (it.corners) return { ...it.corners };
+      return uniformRadii(it.radiusTop ?? 0);
     default:
       return uniformRadii(scaleR(s.radius));
   }

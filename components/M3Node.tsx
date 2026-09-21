@@ -65,12 +65,19 @@ import {
   TOP_BAR_SIZES,
   topBarHeightOf,
   topBarFontOf,
+  skeletonLayoutOf,
 } from "@/lib/tokens";
 import { CircularProgress, LinearProgress, LoadingIndicator } from "./Loading";
 import { CarouselBody, DatePickerBody, TimePickerBody } from "./Pickers";
+import { M3eSegmentedButton, M3eButtonSegment } from "@m3e/react/segmented-button";
+import { M3eAvatar } from "@m3e/react/avatar";
+import { M3eBadge } from "@m3e/react/badge";
+import { M3eBreadcrumb, M3eBreadcrumbItem } from "@m3e/react/breadcrumb";
+import { M3eSkeleton } from "@m3e/react/skeleton";
 import { t, useLang } from "@/lib/i18n";
 import { useTheme } from "@/lib/theme";
 import { railSelectedLabelColor } from "@/lib/color";
+import { m3ShapePath } from "@/lib/shapes";
 
 /** weight of a heading or label: heavier under the emphasized type setting */
 const useWeight = () => {
@@ -235,6 +242,11 @@ const NO_BOX: Kind[] = [
   "text",
   "divider",
   "splitButton",
+  "segmentedButton",
+  "avatar",
+  "badge",
+  "breadcrumb",
+  "skeleton",
   "fabMenu",
   "carousel",
 ];
@@ -1311,23 +1323,122 @@ function Body({ item, p, tabScroll, menuShown }: { item: Item; p: Palette; tabSc
       );
     }
 
-    case "image":
-      if (item.src) {
+    case "image": {
+      const shape = item.shape ?? "none";
+      const pathD = shape !== "none" ? m3ShapePath(shape) : null;
+      const strokeW = item.strokeWidth ?? 0;
+      const offset = item.strokeOffset ?? 0;
+      const strokeCol = item.strokeColor && (p as Record<string, string>)[item.strokeColor] ? (p as Record<string, string>)[item.strokeColor] : p.outline;
+      const fillCol = item.fill && (p as Record<string, string>)[item.fill] ? (p as Record<string, string>)[item.fill] : p.surfaceContainerHigh;
+
+      if (pathD) {
+        const clipId = `shape-clip-${item.id}`;
+        const sz = sizeOf(item, {});
+        const boxSize = Math.max(1, Math.min(sz.w, sz.h));
+        const k = 380 / boxSize;
+        const totalInset = (offset + strokeW / 2) * k;
+        const scale = Math.max(0.05, (380 - totalInset * 2) / 380);
+        const imgTransform = totalInset > 0 ? `translate(190, 190) scale(${scale}) translate(-190, -190)` : undefined;
+        const scaledStroke = strokeW * k;
+
         return (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img
-            src={item.src}
-            alt=""
-            draggable={false}
-            style={{ width: "100%", height: "100%", objectFit: "cover", display: "block" }}
-          />
+          <div style={{ position: "relative", width: "100%", height: "100%", display: "grid", placeItems: "center" }}>
+            <svg
+              viewBox="0 0 380 380"
+              width="100%"
+              height="100%"
+              preserveAspectRatio="xMidYMid meet"
+              style={{ display: "block", overflow: "visible" }}
+            >
+              <defs>
+                <clipPath id={clipId}>
+                  <path d={pathD} transform={imgTransform} />
+                </clipPath>
+              </defs>
+
+              {/* Background fill if offset > 0 or item.fill is set */}
+              {(item.fill || (strokeW > 0 && offset > 0)) && (
+                <path d={pathD} fill={fillCol} />
+              )}
+
+              {/* Image clipped to M3 shape */}
+              {item.src ? (
+                <image
+                  href={item.src}
+                  width="380"
+                  height="380"
+                  preserveAspectRatio="xMidYMid slice"
+                  clipPath={`url(#${clipId})`}
+                />
+              ) : (
+                <g clipPath={`url(#${clipId})`}>
+                  <path d={pathD} fill={fillCol} />
+                  <foreignObject x="0" y="0" width="380" height="380">
+                    <div style={{ display: "grid", placeItems: "center", width: "100%", height: "100%", color: p.outline }}>
+                      {item.icon && <Icon name={item.icon} size={Math.min(64, Math.round(boxSize * 0.35))} />}
+                    </div>
+                  </foreignObject>
+                </g>
+              )}
+
+              {/* Stroke path tracing the M3 expressive shape */}
+              {strokeW > 0 && (
+                <path
+                  d={pathD}
+                  fill="none"
+                  stroke={strokeCol}
+                  strokeWidth={scaledStroke}
+                  strokeLinejoin="round"
+                  strokeLinecap="round"
+                />
+              )}
+            </svg>
+          </div>
         );
       }
+
+      // Standard rectangular image
+      const hasBorder = strokeW > 0;
+      const rad = item.radiusTop ?? 16;
       return (
-        <div style={{ display: "grid", placeItems: "center", height: "100%", color: p.outline }}>
-          {item.icon && <Icon name={item.icon} size={Math.min(48, Math.round((item.size ?? 200) * 0.3))} />}
+        <div
+          style={{
+            position: "relative",
+            width: "100%",
+            height: "100%",
+            boxSizing: "border-box",
+            border: hasBorder ? `${strokeW}px solid ${strokeCol}` : undefined,
+            padding: offset > 0 ? offset : undefined,
+            background: item.fill ? fillCol : (offset > 0 ? p.surfaceContainerLow : undefined),
+            borderRadius: "inherit",
+            overflow: "hidden",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          {item.src ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={item.src}
+              alt=""
+              draggable={false}
+              style={{
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                display: "block",
+                borderRadius: offset > 0 ? Math.max(0, rad - offset) : undefined,
+              }}
+            />
+          ) : (
+            <div style={{ display: "grid", placeItems: "center", width: "100%", height: "100%", color: p.outline }}>
+              {item.icon && <Icon name={item.icon} size={Math.min(48, Math.round((item.size ?? 200) * 0.3))} />}
+            </div>
+          )}
         </div>
       );
+    }
 
     case "camera":
       /* a viewfinder: the live feed is dark, with focus brackets and a shutter row. The body
@@ -1676,6 +1787,462 @@ function Body({ item, p, tabScroll, menuShown }: { item: Item; p: Palette; tabSc
         />
       );
     }
+
+    case "segmentedButton": {
+      const tabs = item.tabs ?? [];
+      const selectedIdx = item.selected ?? 0;
+      return (
+        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center" }}>
+          <M3eSegmentedButton
+            style={{
+              width: "100%",
+              display: "flex",
+              "--m3e-segmented-button-outline-color": p.outline,
+              "--m3e-segmented-button-selected-container-color": p.secondaryContainer,
+              "--m3e-segmented-button-selected-label-text-color": p.onSecondaryContainer,
+              "--m3e-segmented-button-selected-icon-color": p.onSecondaryContainer,
+              "--m3e-segmented-button-unselected-label-text-color": p.onSurface,
+              "--m3e-segmented-button-unselected-icon-color": p.onSurfaceVariant,
+            } as React.CSSProperties}
+          >
+            {tabs.map((tab, i) => (
+              <M3eButtonSegment
+                key={i}
+                checked={i === selectedIdx}
+                value={tab.label}
+                style={{
+                  flex: 1,
+                  "--m3e-segmented-button-selected-container-color": p.secondaryContainer,
+                  "--m3e-segmented-button-selected-label-text-color": p.onSecondaryContainer,
+                  "--m3e-segmented-button-selected-icon-color": p.onSecondaryContainer,
+                  "--m3e-segmented-button-unselected-label-text-color": p.onSurface,
+                  "--m3e-segmented-button-unselected-icon-color": p.onSurfaceVariant,
+                  "--m3e-segmented-button-outline-color": p.outline,
+                } as React.CSSProperties}
+              >
+                {tab.icon && (
+                  <span slot="icon" style={{ display: "inline-flex", verticalAlign: "middle" }}>
+                    <Icon name={tab.icon} size={18} />
+                  </span>
+                )}
+                {tab.label}
+              </M3eButtonSegment>
+            ))}
+          </M3eSegmentedButton>
+        </div>
+      );
+    }
+
+    case "avatar": {
+      const d = item.size ?? 40;
+      const fillRole = item.fill ?? "primaryContainer";
+      const bg = (p as Record<string, string>)[fillRole] ?? p.primaryContainer;
+      const fg = onToken(fillRole, p);
+      return (
+        <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: d, height: d }}>
+          <M3eAvatar
+            style={{
+              "--m3e-avatar-size": `${d}px`,
+              "--m3e-avatar-color": bg,
+              "--m3e-avatar-label-color": fg,
+              width: d,
+              height: d,
+              borderRadius: "50%",
+              display: "inline-flex",
+              alignItems: "center",
+              justifyContent: "center",
+            } as React.CSSProperties}
+          >
+            {item.src ? (
+              <img
+                src={item.src}
+                alt={item.label || "Avatar"}
+                style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }}
+              />
+            ) : item.icon ? (
+              <Icon name={item.icon} size={Math.round(d * 0.55)} color={fg} />
+            ) : (
+              <span style={{ fontSize: Math.round(d * 0.45), fontWeight: w(500, 700), color: fg }}>
+                {item.label || "A"}
+              </span>
+            )}
+          </M3eAvatar>
+        </div>
+      );
+    }
+
+    case "badge": {
+      const isDot = !item.label || item.label.trim() === "";
+      const bg = item.fill && (p as Record<string, string>)[item.fill] ? (p as Record<string, string>)[item.fill] : p.error;
+      const fg = item.fill ? onToken(item.fill, p) : p.onError;
+      return (
+        <div style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", height: "100%" }}>
+          <M3eBadge
+            size={isDot ? "small" : "medium"}
+            style={{
+              "--m3e-badge-container-color": bg,
+              "--m3e-badge-color": fg,
+              pointerEvents: "auto",
+            } as React.CSSProperties}
+          >
+            {item.label}
+          </M3eBadge>
+        </div>
+      );
+    }
+
+    case "breadcrumb": {
+      const tabs = item.tabs ?? [];
+      return (
+        <div style={{ width: "100%", height: "100%", display: "flex", alignItems: "center", overflow: "hidden", color: p.onSurfaceVariant }}>
+          <M3eBreadcrumb
+            wrap
+            style={{
+              display: "flex",
+              alignItems: "center",
+              "--m3e-breadcrumb-item-label-color": p.primary,
+              "--m3e-breadcrumb-item-icon-color": p.primary,
+              "--m3e-breadcrumb-item-last-color": p.onSurface,
+              color: p.onSurfaceVariant,
+            } as React.CSSProperties}
+          >
+            {tabs.map((tab, i) => (
+              <M3eBreadcrumbItem
+                key={i}
+                current={i === tabs.length - 1 ? "page" : undefined}
+                style={{
+                  "--m3e-breadcrumb-item-label-color": p.primary,
+                  "--m3e-breadcrumb-item-icon-color": p.primary,
+                  "--m3e-breadcrumb-item-last-color": p.onSurface,
+                  color: i === tabs.length - 1 ? p.onSurface : p.primary,
+                } as React.CSSProperties}
+              >
+                {tab.icon && (
+                  <span slot="icon" style={{ display: "inline-flex", verticalAlign: "middle" }}>
+                    <Icon name={tab.icon} size={16} />
+                  </span>
+                )}
+                {tab.label}
+              </M3eBreadcrumbItem>
+            ))}
+          </M3eBreadcrumb>
+        </div>
+      );
+    }
+
+    case "skeleton": {
+      const skShape = skeletonLayoutOf(item);
+      const r = skShape === "circular" ? "50%" : skShape === "square" ? "0px" : "16px";
+      return (
+        <div
+          style={{
+            position: "relative",
+            width: "100%",
+            height: "100%",
+            borderRadius: r,
+            overflow: "hidden",
+            background: p.surfaceContainerHighest,
+          }}
+        >
+          <M3eSkeleton
+            shape={skShape}
+            animation="wave"
+            style={{
+              width: "100%",
+              height: "100%",
+              display: "block",
+              "--m3e-skeleton-color": p.surfaceContainerHighest,
+              "--m3e-skeleton-tint-color": p.surfaceContainer,
+              "--m3e-skeleton-accent-color": p.onSurface,
+              "--m3e-skeleton-accent-opacity": "0.16",
+            } as React.CSSProperties}
+          >
+            <div
+              style={{
+                width: "100%",
+                height: "100%",
+                minWidth: 24,
+                minHeight: 16,
+              }}
+            />
+          </M3eSkeleton>
+        </div>
+      );
+    }
+
+    case "bottomSheet": {
+      const tabs = item.tabs ?? [];
+      return (
+        <div
+          style={{
+            position: "relative",
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            boxSizing: "border-box",
+            padding: "12px 16px 16px",
+          }}
+        >
+          {/* M3 Drag Handle */}
+          {item.checked !== false && (
+            <div
+              style={{
+                width: 32,
+                height: 4,
+                borderRadius: 2,
+                background: p.onSurfaceVariant,
+                opacity: 0.4,
+                margin: "0 auto 12px",
+                flexShrink: 0,
+              }}
+            />
+          )}
+          {/* Sheet Headline & Supporting Text */}
+          {item.label && (
+            <div
+              style={{
+                fontSize: 16,
+                lineHeight: "24px",
+                fontWeight: 600,
+                color: p.onSurface,
+                marginBottom: item.supporting ? 2 : 8,
+                ...ellipsis,
+              }}
+            >
+              {item.label}
+            </div>
+          )}
+          {item.supporting && (
+            <div
+              style={{
+                fontSize: 13,
+                lineHeight: "18px",
+                color: p.onSurfaceVariant,
+                marginBottom: 10,
+                ...ellipsis,
+              }}
+            >
+              {item.supporting}
+            </div>
+          )}
+          {/* Action List */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, overflow: "hidden", flex: 1 }}>
+            {tabs.map((tab, idx) => (
+              <div
+                key={idx}
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 12,
+                  height: 40,
+                  padding: "0 8px",
+                  borderRadius: 12,
+                  color: p.onSurface,
+                  fontSize: 14,
+                  fontWeight: 500,
+                  cursor: "default",
+                }}
+              >
+                {tab.icon && (
+                  <div style={{ color: p.onSurfaceVariant, display: "grid", placeItems: "center" }}>
+                    <Icon name={tab.icon} size={20} />
+                  </div>
+                )}
+                <span style={{ flex: 1, ...ellipsis }}>{tab.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    case "sideSheet": {
+      const tabs = item.tabs ?? [];
+      const sel = item.selected ?? 0;
+      return (
+        <div
+          style={{
+            position: "relative",
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            overflow: "hidden",
+            boxSizing: "border-box",
+            padding: "16px 12px",
+          }}
+        >
+          {/* Profile / App Header */}
+          <div style={{ display: "flex", alignItems: "center", gap: 12, padding: "0 8px 16px" }}>
+            <div
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: 22,
+                background: p.primaryContainer,
+                color: p.onPrimaryContainer,
+                display: "grid",
+                placeItems: "center",
+                flexShrink: 0,
+              }}
+            >
+              <Icon name={item.icon ?? "account_circle"} size={28} />
+            </div>
+            <div style={{ flex: 1, overflow: "hidden" }}>
+              <div style={{ fontSize: 15, fontWeight: 600, color: p.onSurface, ...ellipsis }}>
+                {item.label}
+              </div>
+              {item.supporting && (
+                <div style={{ fontSize: 12, color: p.onSurfaceVariant, ...ellipsis }}>
+                  {item.supporting}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Section Divider */}
+          <div style={{ height: 1, background: p.outlineVariant, margin: "0 8px 12px", flexShrink: 0 }} />
+
+          {/* Navigation Items */}
+          <div style={{ display: "flex", flexDirection: "column", gap: 4, flex: 1, overflow: "hidden" }}>
+            {tabs.map((tab, idx) => {
+              const on = idx === sel;
+              return (
+                <div
+                  key={idx}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 12,
+                    height: 48,
+                    padding: "0 16px",
+                    borderRadius: 24,
+                    background: on ? p.secondaryContainer : "transparent",
+                    color: on ? p.onSecondaryContainer : p.onSurfaceVariant,
+                    fontSize: 14,
+                    fontWeight: on ? 600 : 500,
+                  }}
+                >
+                  {tab.icon && <Icon name={tab.icon} size={22} fill={on} />}
+                  <span style={{ flex: 1, ...ellipsis }}>{tab.label}</span>
+                  {(idx === 0 || idx === 1) && (
+                    <span
+                      style={{
+                        fontSize: 11,
+                        fontWeight: 600,
+                        padding: "2px 6px",
+                        borderRadius: 10,
+                        background: on ? p.onSecondaryContainer : p.surfaceContainerHighest,
+                        color: on ? p.secondaryContainer : p.onSurfaceVariant,
+                      }}
+                    >
+                      {idx === 0 ? "12" : "3"}
+                    </span>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
+
+    case "banner": {
+      return (
+        <div
+          style={{
+            position: "relative",
+            width: "100%",
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "space-between",
+            boxSizing: "border-box",
+            padding: "12px 16px 8px",
+            borderBottom: `1px solid ${p.outlineVariant}`,
+          }}
+        >
+          {/* Main message row with leading icon */}
+          <div style={{ display: "flex", alignItems: "flex-start", gap: 12 }}>
+            <div
+              style={{
+                width: 36,
+                height: 36,
+                borderRadius: 18,
+                background: p.secondaryContainer,
+                color: p.onSecondaryContainer,
+                display: "grid",
+                placeItems: "center",
+                flexShrink: 0,
+                marginTop: 2,
+              }}
+            >
+              <Icon name={item.icon ?? "info"} size={20} />
+            </div>
+            <div style={{ flex: 1, overflow: "hidden" }}>
+              <div style={{ fontSize: 14, fontWeight: 600, color: p.onSurface, ...ellipsis }}>
+                {item.label}
+              </div>
+              {item.supporting && (
+                <div
+                  style={{
+                    fontSize: 12,
+                    lineHeight: "16px",
+                    color: p.onSurfaceVariant,
+                    marginTop: 2,
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                  }}
+                >
+                  {item.supporting}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Action buttons row */}
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, marginTop: 4, flexWrap: "wrap" }}>
+            {(item.tabs && item.tabs.length > 0
+              ? item.tabs
+              : [
+                  { icon: "", label: t("dismiss", lang) },
+                  { icon: "", label: t("retry", lang) },
+                ]
+            ).map((tab, idx, arr) => {
+              const isLast = idx === arr.length - 1;
+              return (
+                <button
+                  key={idx}
+                  type="button"
+                  className="m3-press"
+                  style={{
+                    height: 32,
+                    padding: "0 12px",
+                    borderRadius: 16,
+                    background: isLast ? p.primary : "transparent",
+                    border: "none",
+                    color: isLast ? p.onPrimary : p.primary,
+                    fontSize: 13,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 6,
+                  }}
+                >
+                  {tab.icon && <Icon name={tab.icon} size={16} />}
+                  {tab.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
   }
   return null;
 }
@@ -1739,12 +2306,25 @@ export function boxStyle(item: Item, p: Palette): React.CSSProperties {
     case "snackbar":
       return { background: p.inverseSurface, border: "none", color: p.inverseOnSurface };
     case "image":
+      return {
+        background: item.shape && item.shape !== "none" ? "transparent" : p.surfaceContainerHighest,
+        border: "none",
+      };
     case "map":
       return { background: p.surfaceContainerHighest, border: "none" };
     case "camera":
       return { background: p.inverseSurface, border: "none", color: p.inverseOnSurface };
     case "listItem": {
       const t = item.fill ?? "surfaceContainerLow";
+      return { background: p[t], border: "none", color: onToken(t, p) };
+    }
+    case "bottomSheet":
+    case "sideSheet": {
+      const t = item.fill ?? "surfaceContainerLow";
+      return { background: p[t], border: "none", color: onToken(t, p) };
+    }
+    case "banner": {
+      const t = item.fill ?? "surfaceContainer";
       return { background: p[t], border: "none", color: onToken(t, p) };
     }
     default:
@@ -1775,6 +2355,12 @@ function shadowOf(item: Item): string {
       return "0 3px 8px rgba(0,0,0,0.18)";
     case "toolbar":
       return "0 2px 6px rgba(0,0,0,0.14), 0 1px 2px rgba(0,0,0,0.10)";
+    case "bottomSheet":
+      return "0 1px 3px rgba(0,0,0,0.20), 0 4px 12px rgba(0,0,0,0.14)";
+    case "sideSheet":
+      return "0 2px 8px rgba(0,0,0,0.18), 0 1px 3px rgba(0,0,0,0.12)";
+    case "banner":
+      return "none";
     default:
       return "none";
   }
@@ -1834,7 +2420,12 @@ export function M3Node({
   const r = radii ?? baseRadii(item);
   const size = sizeOf(drawn, widths);
   const measured = isMeasured(drawn);
-  const clips = !NO_BOX.includes(item.kind) && !menuOpen(drawn) && item.kind !== "textField" && item.kind !== "select";
+  const clips =
+    !NO_BOX.includes(item.kind) &&
+    !menuOpen(drawn) &&
+    item.kind !== "textField" &&
+    item.kind !== "select" &&
+    !(item.kind === "image" && item.shape && item.shape !== "none");
   /* only the button family lights up from inside; everything else is left as it was drawn */
   const lights = !!ripple && RIPPLE_KINDS.includes(item.kind);
   const ripples = useRipples(lights);
@@ -1947,7 +2538,12 @@ export function M3Static({
   const r = radii ?? baseRadii(item);
   const size = sizeOf(item, {});
   const measured = isMeasured(item);
-  const clips = !NO_BOX.includes(item.kind) && !menuOpen(item) && item.kind !== "textField" && item.kind !== "select";
+  const clips =
+    !NO_BOX.includes(item.kind) &&
+    !menuOpen(item) &&
+    item.kind !== "textField" &&
+    item.kind !== "select" &&
+    !(item.kind === "image" && item.shape && item.shape !== "none");
   return (
     <div
       style={{

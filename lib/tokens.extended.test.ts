@@ -34,6 +34,7 @@ import {
   clamp,
   uid,
   uniformRadii,
+  baseRadii,
   isExpanded,
   frameSizeOf,
   isPhoneFrame,
@@ -433,5 +434,35 @@ describe("card image placement helpers", () => {
     expect(cardScrimOf("#ffffff", "center")).toMatch(/^rgba\(0,0,0,/);
   });
 
+  it("configures bottomSheet, sideSheet, and banner items with customizable defaults and radii", () => {
+    const bs = makeItem("bottomSheet");
+    expect(bs.size2).toBe(240);
+    expect(bs.checked).toBe(true);
+    expect(bs.fill).toBe("surfaceContainerLow");
+    expect(bs.tabs?.length).toBeGreaterThan(0);
+    expect(baseRadii(bs).tl).toBe(28);
+    expect(baseRadii({ ...bs, radiusTop: 16, radiusBottom: 8 })).toEqual({ tl: 16, tr: 16, bl: 8, br: 8 });
+
+    const ss = makeItem("sideSheet");
+    expect(ss.size2).toBe(480);
+    expect(ss.fill).toBe("surfaceContainerLow");
+    expect(ss.tabs?.length).toBe(4);
+    expect(baseRadii(ss).tr).toBe(28);
+    expect(baseRadii({ ...ss, corners: { tl: 10, tr: 20, bl: 30, br: 40 } })).toEqual({ tl: 10, tr: 20, bl: 30, br: 40 });
+
+    const ban = makeItem("banner");
+    expect(ban.size2).toBe(104);
+    expect(ban.fill).toBe("surfaceContainer");
+    expect(ban.tabs?.length).toBe(2);
+    expect(baseRadii(ban)).toEqual({ tl: 0, tr: 0, bl: 0, br: 0 });
+    expect(baseRadii({ ...ban, radiusTop: 12 })).toEqual({ tl: 12, tr: 12, bl: 12, br: 12 });
+
+    const img = makeItem("image");
+    expect(baseRadii(img)).toEqual({ tl: 20, tr: 20, bl: 20, br: 20 });
+    expect(baseRadii({ ...img, shape: "sunny" })).toEqual({ tl: 0, tr: 0, bl: 0, br: 0 });
+    expect(baseRadii({ ...img, shape: "none" })).toEqual({ tl: 20, tr: 20, bl: 20, br: 20 });
+    expect(baseRadii({ ...img, shape: "circle" })).toEqual({ tl: 0, tr: 0, bl: 0, br: 0 });
+    expect(baseRadii({ ...img, shape: "none", corners: { tl: 8, tr: 8, bl: 4, br: 4 } })).toEqual({ tl: 8, tr: 8, bl: 4, br: 4 });
+  });
 });
 

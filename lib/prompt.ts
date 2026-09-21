@@ -20,6 +20,7 @@ import {
   buttonSizeKeyOf,
   CHIP_H_MIN,
   chipHeightOf,
+  skeletonLayoutOf,
   linkUrlOf,
   Doc,
   FONTS,
@@ -381,6 +382,29 @@ function itemJa(it: Item): string {
     }
     case "radio":
       return `${q(it.label)}のラジオボタン（初期状態は${it.checked ? "選択" : "未選択"}）`;
+    case "segmentedButton": {
+      const segs = (it.tabs ?? []).map((t) => `${q(t.label || "ラベルなし")}${t.icon ? `（${t.icon} アイコン）` : ""}`);
+      const selected = it.selected !== undefined && it.tabs?.[it.selected] ? `、初期選択は${q(it.tabs[it.selected].label)}` : "";
+      return `${segs.length} つのセグメントを持つセグメントボタン（${segs.join("、")}${selected}）`;
+    }
+    case "avatar":
+      return `${it.size ?? 40}dp のアバター（${it.src ? "画像" : it.icon ? `${it.icon} アイコン` : `${q(it.label)} のイニシャル`}）`;
+    case "badge":
+      return `${it.label ? `値 ${q(it.label)} の` : "ドットの"}バッジ`;
+    case "breadcrumb": {
+      const items = (it.tabs ?? []).map((t) => `${q(t.label || "ラベルなし")}${t.icon ? `（${t.icon} アイコン）` : ""}`);
+      return `階層ナビゲーションのブレッドクラム（${items.join(" / ")}）`;
+    }
+    case "skeleton": {
+      const sh = skeletonLayoutOf(it) === "circular" ? "円形" : skeletonLayoutOf(it) === "square" ? "正方形" : "角丸";
+      return `${it.size ?? CONTENT_W}×${it.size2 ?? 72}dp のスケルトン（${sh}形状のローディングプレースホルダー）`;
+    }
+    case "bottomSheet":
+      return `ボトムシート（見出し ${q(it.label)}、${(it.tabs ?? []).length} 件のアクション）`;
+    case "sideSheet":
+      return `サイドシート / ナビゲーションドロワー（ユーザー名 ${q(it.label)}、${(it.tabs ?? []).length} 件のナビ項目）`;
+    case "banner":
+      return `バナー（メッセージ ${q(it.label)}）`;
     default:
       return noun;
   }
@@ -430,22 +454,22 @@ function itemEn(it: Item): string {
     case "snackbar":
       return `a snackbar ${q(it.label)}${hasText(it.supporting) ? ` with a ${q(it.supporting!)} action` : ""}`;
     case "textField":
-      return `${it.variant === "filled" ? "a filled" : "an outlined"} text field labeled ${q(it.label)}${it.icon ? ` with a leading ${it.icon} icon` : ""}${hasText(it.supporting) ? `; supporting text ${q(it.supporting!)}` : ""}`;
+      return `an ${it.variant} text field labeled ${q(it.label)}${it.icon ? ` with a ${it.icon} icon` : ""}${hasText(it.supporting) ? ` and supporting text ${q(it.supporting!)}` : ""}`;
     case "select": {
       const opts = (it.tabs ?? []).map((t) => q(t.label || "unlabeled"));
-      const initial = it.selected !== undefined && it.tabs?.[it.selected] ? `, initially ${q(it.tabs[it.selected].label)}` : ", initially none";
-      return `${it.variant === "filled" ? "a filled" : "an outlined"} dropdown labeled ${q(it.label)} that opens a menu to pick one option (options ${opts.join(", ")}${initial})${it.icon ? `, with a leading ${it.icon} icon` : ""}${hasText(it.supporting) ? `; supporting text ${q(it.supporting!)}` : ""}`;
+      const initial = it.selected !== undefined && it.tabs?.[it.selected] ? `; initially ${q(it.tabs[it.selected].label)}` : "; initially unselected";
+      return `an ${it.variant} dropdown labeled ${q(it.label)} (tapping opens a menu of choices: ${opts.join(", ")}${initial})${it.icon ? ` with a ${it.icon} icon` : ""}${hasText(it.supporting) ? ` and supporting text ${q(it.supporting!)}` : ""}`;
     }
     case "switch":
       return `a switch ${q(it.label)} (initially ${it.checked ? "on" : "off"})`;
     case "checkbox":
       return `a checkbox ${q(it.label)} (initially ${it.checked ? "checked" : "unchecked"})`;
     case "slider":
-      return `a slider (initial value ${it.value ?? 40}%)`;
+      return `a slider set to ${it.value ?? 40}%`;
     case "text":
-      return `${it.bold ? "bold " : ""}text ${q(it.label)} at ${it.size ?? 28}sp`;
+      return `${it.bold ? "bold " : ""}text ${q(it.label)} (${it.size ?? 28}sp)`;
     case "image":
-      return `a ${imageDims(it)} image${imageSrc(it) ? ` (load it from ${imageSrc(it)})` : it.src ? " (use the provided image)" : " placeholder"}`;
+      return `a ${imageDims(it)} image${imageSrc(it) ? ` showing a picture of ${imageSrc(it)}` : it.src ? " showing the specified picture" : " placeholder"}`;
     case "camera":
       return `a ${viewSize(it, 4 / 3)} camera preview`;
     case "map":
@@ -476,6 +500,29 @@ function itemEn(it: Item): string {
     }
     case "radio":
       return `a radio button ${q(it.label)} (initially ${it.checked ? "selected" : "unselected"})`;
+    case "segmentedButton": {
+      const segs = (it.tabs ?? []).map((t) => `${q(t.label || "unlabeled")}${t.icon ? ` (${t.icon} icon)` : ""}`);
+      const selected = it.selected !== undefined && it.tabs?.[it.selected] ? `; initially ${q(it.tabs[it.selected].label)} selected` : "";
+      return `a segmented button with ${segs.length} segments: ${segs.join(", ")}${selected}`;
+    }
+    case "avatar":
+      return `a ${it.size ?? 40}dp avatar (${it.src ? "image" : it.icon ? `${it.icon} icon` : `initials ${q(it.label)}`})`;
+    case "badge":
+      return `a ${it.label ? `badge with ${q(it.label)}` : "dot badge"}`;
+    case "breadcrumb": {
+      const items = (it.tabs ?? []).map((t) => `${q(t.label || "unlabeled")}${t.icon ? ` (${t.icon} icon)` : ""}`);
+      return `a breadcrumb navigation trail with ${items.length} items: ${items.join(" / ")}`;
+    }
+    case "skeleton": {
+      const sh = skeletonLayoutOf(it);
+      return `a ${it.size ?? CONTENT_W}×${it.size2 ?? 72}dp skeleton loading placeholder (${sh} shape with wave animation)`;
+    }
+    case "bottomSheet":
+      return `a bottom sheet (headline ${q(it.label)} with ${(it.tabs ?? []).length} actions)`;
+    case "sideSheet":
+      return `a navigation drawer / side sheet for ${q(it.label)} with ${(it.tabs ?? []).length} destinations`;
+    case "banner":
+      return `a banner with message ${q(it.label)}`;
     default:
       return noun;
   }
@@ -571,6 +618,29 @@ function itemZh(it: Item): string {
     }
     case "radio":
       return `${q(it.label)}单选按钮（初始状态为${it.checked ? "选中" : "未选中"}）`;
+    case "segmentedButton": {
+      const segs = (it.tabs ?? []).map((t) => `${q(t.label || "无标签")}${t.icon ? `（${t.icon} 图标）` : ""}`);
+      const selected = it.selected !== undefined && it.tabs?.[it.selected] ? `，初始选择为${q(it.tabs[it.selected].label)}` : "";
+      return `包含 ${segs.length} 个分段的分段按钮（${segs.join("、")}${selected}）`;
+    }
+    case "avatar":
+      return `${it.size ?? 40}dp 的头像（${it.src ? "图片" : it.icon ? `${it.icon} 图标` : `首字母 ${q(it.label)}`}）`;
+    case "badge":
+      return `${it.label ? `带数值 ${q(it.label)} 的` : "圆点"}徽标`;
+    case "breadcrumb": {
+      const items = (it.tabs ?? []).map((t) => `${q(t.label || "无标签")}${t.icon ? `（${t.icon} 图标）` : ""}`);
+      return `包含 ${items.length} 级路径的面包屑导航（${items.join(" / ")}）`;
+    }
+    case "skeleton": {
+      const sh = skeletonLayoutOf(it) === "circular" ? "圆形" : skeletonLayoutOf(it) === "square" ? "方形" : "圆角";
+      return `${it.size ?? CONTENT_W}×${it.size2 ?? 72}dp 的骨架屏（${sh}形状加载占位符）`;
+    }
+    case "bottomSheet":
+      return `底部动作条（标题 ${q(it.label)}，含 ${(it.tabs ?? []).length} 个操作项）`;
+    case "sideSheet":
+      return `侧边抽屉（用户 ${q(it.label)}，含 ${(it.tabs ?? []).length} 个导航项）`;
+    case "banner":
+      return `横幅横条（提示信息 ${q(it.label)}）`;
     default:
       return noun;
   }
@@ -638,6 +708,27 @@ function itemKo(it: Item): string {
       return `${labels.join(", ")}의 탭 ${labels.length}개(${selectedText(it, "ko")}${isScrollableTabs(it) ? ", 가로로 스크롤되는 탭" : ""})`;
     }
     case "radio": return `${q(it.label)} 라디오 버튼(초기 상태 ${it.checked ? "선택됨" : "선택 안 됨"})`;
+    case "segmentedButton": {
+      const segs = (it.tabs ?? []).map((t) => `${q(t.label || "레이블 없음")}${t.icon ? `(${t.icon} 아이콘)` : ""}`);
+      const selected = it.selected !== undefined && it.tabs?.[it.selected] ? `, 초기 선택은 ${q(it.tabs[it.selected].label)}` : "";
+      return `${segs.length}개 세그먼트의 세그먼트 버튼(${segs.join(", ")}${selected})`;
+    }
+    case "avatar": return `${it.size ?? 40}dp 아바타(${it.src ? "이미지" : it.icon ? `${it.icon} 아이콘` : `이니셜 ${q(it.label)}`})`;
+    case "badge": return `${it.label ? `값 ${q(it.label)} 배지` : "점 배지"}`;
+    case "breadcrumb": {
+      const items = (it.tabs ?? []).map((t) => `${q(t.label || "레이블 없음")}${t.icon ? `(${t.icon} 아이콘)` : ""}`);
+      return `${items.length}개 항목의 브레드크럼 내비게이션(${items.join(" / ")})`;
+    }
+    case "skeleton": {
+      const sh = skeletonLayoutOf(it) === "circular" ? "원형" : skeletonLayoutOf(it) === "square" ? "정사각형" : "둥근 모서리";
+      return `${it.size ?? CONTENT_W}×${it.size2 ?? 72}dp 스켈레톤(${sh} 모양의 로딩 플레이스홀더)`;
+    }
+    case "bottomSheet":
+      return `바텀 시트(제목 ${q(it.label)}, ${(it.tabs ?? []).length}개 작업 항목)`;
+    case "sideSheet":
+      return `사이드 시트 / 내비게이션 드로어(사용자 ${q(it.label)}, ${(it.tabs ?? []).length}개 탐색 항목)`;
+    case "banner":
+      return `배너(메시지 ${q(it.label)})`;
     default: return noun;
   }
 }
@@ -1128,6 +1219,15 @@ const STYLE_NOTES: Record<Lang, Partial<Record<Kind | "boxSheet", string>>> = {
       "フローティングツールバー: M3 Expressive の HorizontalFloatingToolbar。高さ 64dp、角は完全な丸、画面下端から 16dp 上に浮かせ、内容の上に重ねる。スタンダードは surfaceContainer、ビブラントは primaryContainer。中のアイコンボタンは 48dp。",
     tabs: "タブ: M3 のプライマリタブ。高さ 48dp、ラベルは titleSmall、選択中のタブは primary の文字とラベル幅の 3dp インジケータ（上の角丸）、下に outlineVariant の区切り線。タブをタップすると内容が切り替わる。",
     radio: "ラジオボタン: 20dp の円。選択時は primary の枠と中央の点、未選択は onSurfaceVariant の枠。同じグループ内では 1 つだけ選べる。ラベルは右に bodyLarge。",
+    segmentedButton:
+      "セグメントボタン: M3 の SegmentedButton（SingleChoiceSegmentedButtonRow または MultiChoiceSegmentedButtonRow）。各セグメントは高さ 40dp、外側の角は完全な丸（ピル型）、隣り合うセグメント同士は境界線を共有する。選択中のセグメントは secondaryContainer で塗り、アイコンとラベルを配置する。",
+    avatar: "アバター: 円形（40dp など指定サイズ）。画像、アイコン、またはイニシャルテキストを中央に表示する。背景は primaryContainer、文字・アイコンは onPrimaryContainer。",
+    badge: "バッジ: 最小限のドットインジケータまたは小さなテキスト（数値など）を表示するコンパクトなラベル。背景は error、文字は onError。",
+    breadcrumb: "ブレッドクラム: 階層ナビゲーションのトレイル。各項目はリンクボタンとして機能し、区切り記号でつながる。末尾の項目は現在位置を示し、文字色は onSurfaceVariant。",
+    skeleton: "スケルトン: コンテンツ読み込み中に表示するプレースホルダー。角丸（rounded）、円形（circular）、正方形（square）のバリアントがあり、波形（wave）のアニメーションでローディング状態を表現する。色は surfaceContainerHighest。",
+    bottomSheet: "ボトムシート: M3 BottomSheet。画面下端に固定され、上部角丸 28dp と中央の 32×4dp ドラッグハンドルを備える。背景は surfaceContainerLow でレベル 1/2 の影を持ち、アクション一覧や補足コンテンツを表示する。",
+    sideSheet: "サイドシート: M3 NavigationDrawer。画面端に配置され、外側角丸 28dp と surfaceContainerLow 背景を持つ。ユーザープロフィールヘッダー、active 状態を secondaryContainer ピルで示すナビ項目、区切り線を含む。",
+    banner: "バナー: M3 Banner。トップアプリバー直下に全幅で配置され、背景は surfaceContainer、下端に 1dp outlineVariant 境界線を持つ。先頭ステータスアイコン、メッセージ、およびアクションボタンを備える。",
   },
   en: {
     button:
@@ -1183,6 +1283,15 @@ const STYLE_NOTES: Record<Lang, Partial<Record<Kind | "boxSheet", string>>> = {
       "Floating toolbar: the M3 Expressive HorizontalFloatingToolbar. 64dp tall, fully rounded, floating 16dp above the bottom edge over the content. Standard uses surfaceContainer, vibrant uses primaryContainer. The icon buttons inside are 48dp.",
     tabs: "Tabs: M3 primary tabs. 48dp tall, labels in titleSmall; the selected tab has primary text and a 3dp label-width indicator with rounded top corners, with an outlineVariant divider underneath. Tapping a tab switches the content.",
     radio: "Radio buttons: 20dp circles. Selected shows a primary ring with a center dot, unselected an onSurfaceVariant ring. Only one in a group can be selected. Label on the right in bodyLarge.",
+    segmentedButton:
+      "Segmented buttons: M3 SegmentedButton (SingleChoiceSegmentedButtonRow or MultiChoiceSegmentedButtonRow). Segments are 40dp tall with pill-shaped outer corners and shared borders between adjacent segments. Selected segments fill with secondaryContainer and can display an icon and label.",
+    avatar: "Avatars: circular (40dp or specified size). Display an image, icon, or initials centered. Background is primaryContainer with onPrimaryContainer foreground.",
+    badge: "Badges: compact indicators showing a dot or short text (e.g. counts). Background is error with onError text.",
+    breadcrumb: "Breadcrumb: hierarchical navigation trail. Items function as link buttons connected with separators. The last item indicates the current page, styled in onSurfaceVariant.",
+    skeleton: "Skeleton: visual loading placeholder surface mimicking layout during content fetching. Supports rounded, circular, and square variants with wave motion animation, in surfaceContainerHighest.",
+    bottomSheet: "Bottom sheet: M3 BottomSheet anchored to the bottom edge with 28dp top corners and a 32×4dp centered drag handle. Background is surfaceContainerLow with a level 1/2 shadow. Contains an action list and supporting content.",
+    sideSheet: "Side sheet / Navigation drawer: M3 NavigationDrawer anchored to the screen side with 28dp rounded outer corners and surfaceContainerLow background. Contains user profile header, section items with secondaryContainer pill active indicator, and divider.",
+    banner: "Banner: M3 Banner positioned beneath the top app bar across the full width on surfaceContainer with a 1dp outlineVariant bottom border. Features a leading status icon, two-line message, and action text buttons.",
   },
   zh: {
     button:
@@ -1235,6 +1344,15 @@ const STYLE_NOTES: Record<Lang, Partial<Record<Kind | "boxSheet", string>>> = {
       "悬浮工具栏：M3 Expressive 的 HorizontalFloatingToolbar。高 64dp，完全圆角，悬浮在距屏幕底部 16dp 处并覆盖在内容之上。标准样式用 surfaceContainer，鲜明样式用 primaryContainer。内部图标按钮 48dp。",
     tabs: "标签页：M3 的主标签页。高 48dp，标签用 titleSmall，选中项文字为 primary 并带与标签同宽的 3dp 指示条（上方圆角），下方为 outlineVariant 分割线。点击标签切换内容。",
     radio: "单选按钮：20dp 圆形。选中时为 primary 的圆环加中心圆点，未选中为 onSurfaceVariant 圆环。同一组内只能选一个。标签在右侧，用 bodyLarge。",
+    segmentedButton:
+      "分段按钮：M3 的 SegmentedButton（SingleChoiceSegmentedButtonRow 或 MultiChoiceSegmentedButtonRow）。各分段高 40dp，外侧完全圆角（胶囊形），相邻分段共享边框。选中分段用 secondaryContainer 填充，可包含图标与标签。",
+    avatar: "头像：圆形（40dp 或指定尺寸）。居中显示图片、图标或首字母文字。背景为 primaryContainer，内容为 onPrimaryContainer。",
+    badge: "徽标：紧凑的指示器，显示圆点或简短数值。背景为 error，文字为 onError。",
+    breadcrumb: "面包屑：层级路径导航。各项作为链接按钮通过分隔符相连，最后一项指示当前所在页面，文字使用 onSurfaceVariant。",
+    skeleton: "骨架屏：内容加载时的占位符表面。支持圆角（rounded）、圆形（circular）、方形（square）样式，带波浪（wave）动效，背景为 surfaceContainerHighest。",
+    bottomSheet: "底部动作条：M3 BottomSheet。固定在屏幕底端，顶部圆角 28dp，带有居中的 32×4dp 拖拽手柄。背景为 surfaceContainerLow，具有 1/2 级阴影，包含操作项列表与次要内容。",
+    sideSheet: "侧边抽屉：M3 NavigationDrawer。位于屏幕一侧，外侧圆角 28dp，背景为 surfaceContainerLow。包含用户信息头部、用 secondaryContainer 胶囊高亮显示当前项的导航列表以及分割线。",
+    banner: "横幅横条：M3 Banner。位于顶部应用栏下方整宽呈现，背景为 surfaceContainer，底部有 1dp outlineVariant 边框。包含前置状态图标、提示消息文本及操作按钮。",
   },
   ko: {
     button: "버튼: 높이 56dp의 중간 크기, 완전 둥근 알약 모양. 채움은 primary, 토널은 secondaryContainer, 윤곽선은 1dp outline 테두리를 사용한다. 연결 버튼 그룹은 간격 3dp, 맞닿는 안쪽 모서리 8dp, 바깥쪽 모서리는 둥글게 유지한다. 높이가 지정된 버튼은 M3 크기(XS 32dp / S 40dp / M 56dp / L 96dp / XL 136dp)를 따라 좌우 여백, 글자 크기, 아이콘 크기를 그 크기의 값으로 하고 모서리는 높이의 절반으로 한다.",
@@ -1277,6 +1395,15 @@ const STYLE_NOTES: Record<Lang, Partial<Record<Kind | "boxSheet", string>>> = {
     toolbar: "플로팅 도구 모음: M3 Expressive HorizontalFloatingToolbar. 높이 64dp, 완전 둥근 모서리로 화면 아래쪽에서 16dp 띄운다. 표준은 surfaceContainer, 비브런트는 primaryContainer, 내부 아이콘 버튼은 48dp.",
     tabs: "탭: M3 기본 탭. 높이 48dp, 레이블 titleSmall. 선택 탭은 primary 텍스트와 레이블 너비의 3dp 표시기를 사용하고 아래에 outlineVariant 구분선을 둔다.",
     radio: "라디오 버튼: 20dp 원형. 선택 시 primary 테두리와 가운데 점, 미선택 시 onSurfaceVariant 테두리. 그룹에서 하나만 선택되며 레이블은 오른쪽 bodyLarge.",
+    segmentedButton:
+      "세그먼트 버튼: M3 SegmentedButton(SingleChoiceSegmentedButtonRow 또는 MultiChoiceSegmentedButtonRow). 각 세그먼트는 높이 40dp, 바깥쪽 모서리는 완전 둥근 알약 모양이며 인접한 세그먼트끼리 테두리를 공유한다. 선택된 세그먼트는 secondaryContainer로 채우고 아이콘과 레이블을 표시할 수 있다.",
+    avatar: "아바타: 원형(40dp 또는 지정 크기). 이미지, 아이콘 또는 이니셜 텍스트를 중앙에 표시한다. 배경은 primaryContainer, 텍스트/아이콘은 onPrimaryContainer를 사용한다.",
+    badge: "배지: 점 표시기 또는 짧은 텍스트(숫자 등)를 표시하는 컴팩트 라벨. 배경은 error, 텍스트는 onError를 사용한다.",
+    breadcrumb: "브레드크럼: 계층적 경로 내비게이션. 항목들이 구분 기호로 연결된 링크 버튼으로 동작하며, 마지막 항목은 현재 페이지를 가리키고 onSurfaceVariant를 사용한다.",
+    skeleton: "스켈레톤: 콘텐츠 로딩 중 레이아웃을 유지하는 플레이스홀더. 둥근 모서리(rounded), 원형(circular), 정사각형(square) 형태를 지원하며 wave 모션 애니메이션과 surfaceContainerHighest 색상을 사용한다.",
+    bottomSheet: "바텀 시트: M3 BottomSheet. 화면 하단에 고정되며 상단 모서리 28dp와 중앙의 32×4dp 드래그 핸들을 갖춘다. 배경은 surfaceContainerLow와 Level 1/2 그림자를 사용하며 액션 목록과 보조 콘텐츠를 포함한다.",
+    sideSheet: "사이드 시트: M3 NavigationDrawer. 화면 측면에 고정되며 바깥쪽 모서리 28dp와 surfaceContainerLow 배경을 갖춘다. 프로필 헤더, secondaryContainer 알약으로 활성화된 탐색 항목, 구분선을 포함한다.",
+    banner: "배너: M3 Banner. 상단 앱 바 바로 아래에 전체 너비로 표시되며 surfaceContainer 배경과 하단 1dp outlineVariant 테두리를 사용한다. 상태 아이콘, 메시지 본문, 작업 버튼을 갖춘다.",
   },
 };
 

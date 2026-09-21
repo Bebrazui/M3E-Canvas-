@@ -20,6 +20,10 @@ import {
   Spring,
   LoadingAnimator,
   DURATION_PER_SHAPE_MS,
+  M3_SHAPES,
+  M3_SHAPE_PATHS,
+  isM3Shape,
+  m3ShapePath,
 } from "./shapes";
 
 describe("getShapes()", () => {
@@ -205,3 +209,39 @@ describe("LoadingAnimator", () => {
     expect(a.morph).toBeGreaterThan(2);
   });
 });
+
+describe("M3 Expressive Shape Library", () => {
+  it("defines 33 shapes categorized into basic, expressive, and geometric", () => {
+    expect(M3_SHAPES.length).toBeGreaterThanOrEqual(30);
+    const categories = new Set(M3_SHAPES.map((s) => s.category));
+    expect(categories).toEqual(new Set(["basic", "expressive", "geometric"]));
+  });
+
+  it("every shape except 'none' has a non-empty SVG path in M3_SHAPE_PATHS", () => {
+    for (const shape of M3_SHAPES) {
+      if (shape.key === "none") continue;
+      const d = M3_SHAPE_PATHS[shape.key];
+      expect(d, `Missing path for ${shape.key}`).toBeDefined();
+      expect(typeof d).toBe("string");
+      expect(d.length).toBeGreaterThan(10);
+      expect(d.startsWith("M")).toBe(true);
+    }
+  });
+
+  it("isM3Shape correctly identifies M3 shapes vs standard/none", () => {
+    expect(isM3Shape("sunny")).toBe(true);
+    expect(isM3Shape("circle")).toBe(true);
+    expect(isM3Shape("heart")).toBe(true);
+    expect(isM3Shape("none")).toBe(false);
+    expect(isM3Shape(undefined)).toBe(false);
+    expect(isM3Shape("nonexistent_shape")).toBe(false);
+  });
+
+  it("m3ShapePath returns path string for M3 shapes and null for none/undefined", () => {
+    expect(m3ShapePath("sunny")).toBe(M3_SHAPE_PATHS["sunny"]);
+    expect(m3ShapePath("circle")).toBe(M3_SHAPE_PATHS["circle"]);
+    expect(m3ShapePath("none")).toBeNull();
+    expect(m3ShapePath(undefined)).toBeNull();
+  });
+});
+
